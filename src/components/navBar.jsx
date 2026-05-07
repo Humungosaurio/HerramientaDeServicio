@@ -4,6 +4,7 @@ const Navbar = () => {
       {/* Lado Izquierdo: Logo o Título */}
       <div className="flex items-center">
         <span className="self-center text-xl font-bold whitespace-nowrap text-purple-700">
+          {/* Cambiar por logotipo de institucion*/}
           Rectoria Pedro
         </span>
       </div>

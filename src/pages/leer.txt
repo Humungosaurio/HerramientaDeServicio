@@ -1,0 +1,2 @@
+Pedro lee csm para poder ver utiliza el comando npm run dev -- --open desde git bash
+Arreglar formato de asistencias hacer prueba simple no cambiar color morado admin me referencia por favor

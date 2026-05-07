@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-
+{/* Esto se va a cambiar todo Hacer barra de navegacion en componentes y agregarla a esta pagina */}
 const Asistencias = () => {
   return (
     <div className="p-8 page-transition" >

@@ -1,0 +1,4 @@
+Pagina de componentes si no sabe que hace no la mueva pero en la navBar agregar boton de casa y cambiar 
+Place holder de la izquierda por el nombre de la institucion
+
+//Realicen una barra de navegacion lateral izquierda para la pagina asistencias//
