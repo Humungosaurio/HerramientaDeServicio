@@ -1,4 +1,4 @@
-Pagina de componentespara las paginas 
+Pagina de componentes para las paginas 
 En la navBar agregar boton de casa y cambiar 
 Place holder de la izquierda por el nombre de la institucion
 
