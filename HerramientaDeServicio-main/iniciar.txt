@@ -1,0 +1,1 @@
+comando npm run dev -- --open desde git bash
