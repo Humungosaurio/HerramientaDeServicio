@@ -97,9 +97,53 @@ const Asistencias = () => {
     return total;
   };
 
-  const guardarCambios = () => {
-    alert(`Asistencias de ${nivelSeleccionado} (${turnoSeleccionado}) - ${semanaSeleccionada} / ${diaSeleccionado} guardadas.`);
+  const guardarCambios = async () => {
+  // 1. Mapeo analítico de salones (temporal hasta automatizarlo con la DB)
+  let salonId = 1; 
+  if (nivelSeleccionado === "Maternal" && turnoSeleccionado === "Mañana") salonId = 1;
+  if (nivelSeleccionado === "Maternal" && turnoSeleccionado === "Tarde") salonId = 2;
+  // Agrega aquí más combinaciones si tus compañeros manejan secciones específicas (A, B, etc.)
+
+  // 2. Extraer de forma segura los valores de 'v' y 'h' del estado anidado
+  // Necesitamos pasar por: Nivel -> Turno -> Sección -> Semana -> Día
+  // Usamos el operador '?.' para evitar que la app explote si algún campo aún no está lleno
+  const seccionActiva = "A"; // ⚠️ Ajusta esto si tus compañeros guardan la sección en otra variable
+  
+  const registroDia = datosPorNivel[nivelSeleccionado]?.[turnoSeleccionado]?.[seccionActiva]?.[semanaSeleccionada]?.[diaSeleccionado];
+
+  // Si existe el registro, tomamos 'v' y 'h', de lo contrario por defecto es 0
+  const cantVarones = registroDia?.v || 0;
+  const cantHembras = registroDia?.h || 0;
+
+  // 3. Estructuramos el payload idéntico a lo que espera tu controlador de Python
+  const datosAsistencia = {
+    salon_id: salonId,
+    semana: parseInt(semanaSeleccionada.replace(/\D/g, "")) || 1, // Limpia "Semana 1" -> 1
+    dia_semana: diaSeleccionado,
+    cant_varones: cantVarones,
+    cant_hembras: cantHembras
   };
+
+  // 4. Puente de comunicación bidireccional con pywebview
+  if (window.pywebview && window.pywebview.api) {
+    try {
+      console.log("Enviando reporte global indexado a Python...", datosAsistencia);
+      
+      const respuesta = await window.pywebview.api.guardar_asistencia_global(datosAsistencia);
+
+      if (respuesta.success) {
+        alert(`🎉 ¡Guardado con éxito!\nAsistencias de ${nivelSeleccionado} (${turnoSeleccionado}) sincronizadas en SQLite.`);
+      } else {
+        alert(`❌ Error en Base de Datos: ${respuesta.message}`);
+      }
+    } catch (error) {
+      console.error("Error al comunicar con Python:", error);
+      alert("Error crítico: No se pudo establecer conexión con el backend.");
+    }
+  } else {
+    alert("⚠️ Entorno de escritorio no detectado. Corre el proyecto usando 'python main.py'.");
+  }
+};
 
   return (
     <div className="p-8 page-transition relative">
