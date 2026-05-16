@@ -2,39 +2,67 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const RegistroAlumnos = () => {
-  // SE CAMBIÓ: Ahora el estado inicializa vacío para no mostrar casillas por defecto
+  // El estado inicializa vacío para no mostrar casillas por defecto
   const [estudiantes, setEstudiantes] = useState([]);
-  
+
   const [showModal, setShowModal] = useState(false);
   const [estudianteActivoId, setEstudianteActivoId] = useState(null);
 
   const opcionesNivel = ['Maternal', '1er Nivel', '2do Nivel', '3er Nivel'];
   const opcionesTurno = ['Mañana', 'Tarde'];
   const opcionesCondicion = ['Ninguna', 'Autismo (TEA)', 'TDAH', 'Dislexia', 'Otra'];
+  const opcionesGenero = ['Masculino', 'Femenino', 'Otro'];
+
+  // Función dinámica para calcular las secciones según las reglas del plantel
+  const obtenerSeccionesDisponibles = (nivel, turno) => {
+    if (nivel === 'Maternal') {
+      return ['A']; // Una sección en la mañana y una en la tarde
+    }
+    if (nivel === '1er Nivel' || nivel === '2do Nivel') {
+      return ['A', 'B']; // Dos secciones por turno
+    }
+    if (nivel === '3er Nivel') {
+      return turno === 'Mañana' ? ['A', 'B'] : ['A']; // Dos en la mañana, una en la tarde
+    }
+    return ['A'];
+  };
 
   const agregarFila = () => {
     const nuevoId = Date.now();
     const nuevoEstudiante = {
       id: nuevoId,
-      nombre: '', edad: '', direccion: '', nivelEstudio: 'Maternal', turno: 'Mañana',
+      nombre: '', edad: '', genero: '', direccion: '', 
+      nivelEstudio: 'Maternal', turno: 'Mañana', seccion: 'A',
       cedulaEscolar: '', fechaNacimiento: '', condicion: 'Ninguna', representanteLegal: '', representanteInstitucional: '',
       repNombre: '', repCi: '', repFechaLugarNac: '', repDireccion: '', repTrabaja: 'No', repDondeTrabaja: '', repEdad: '', repGradoInstruccion: '', repTelefono: '', repCorreo: ''
     };
-    
+
     setEstudiantes([...estudiantes, nuevoEstudiante]);
-    setEstudianteActivoId(nuevoId); 
+    setEstudianteActivoId(nuevoId);
   };
 
   const handleInputChange = (id, campo, valor) => {
     setEstudiantes(prevEstudiantes =>
       prevEstudiantes.map(est => {
         if (est.id === id) {
-          let valorFinal = valor;
+          let copiaEstudiante = { ...est, [campo]: valor };
+
           if ((campo === 'edad' || campo === 'repEdad') && valor !== "") {
             const num = parseInt(valor);
-            valorFinal = num < 0 ? "0" : valor;
+            copiaEstudiante[campo] = num < 0 ? "0" : valor;
           }
-          return { ...est, [campo]: valorFinal };
+
+          if (campo === 'nivelEstudio' || campo === 'turno') {
+            const seccionesValidas = obtenerSeccionesDisponibles(
+              copiaEstudiante.nivelEstudio,
+              copiaEstudiante.turno
+            );
+            if (!seccionesValidas.includes(copiaEstudiante.seccion)) {
+              copiaEstudiante.seccion = seccionesValidas[0];
+            }
+          }
+
+          return copiaEstudiante;
         }
         return est;
       })
@@ -63,7 +91,7 @@ const RegistroAlumnos = () => {
   return (
     <div className="p-8 page-transition relative">
       <div className="flex flex-col gap-6">
-        
+
         <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b pb-4 gap-4">
           <div>
             <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">Módulo Académico</p>
@@ -71,7 +99,7 @@ const RegistroAlumnos = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button 
+            <button
               onClick={() => setShowModal(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center"
             >
@@ -94,8 +122,8 @@ const RegistroAlumnos = () => {
         <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
             <h2 className="font-bold text-gray-700">Matrícula Actual</h2>
-            <button 
-              onClick={agregarFila} 
+            <button
+              onClick={agregarFila}
               className="bg-purple-100 text-purple-700 hover:bg-purple-200 px-4 py-2 rounded-lg font-bold flex items-center text-sm transition-colors shadow-sm border border-purple-200"
             >
               <span className="text-xl mr-2 leading-none">+</span> Añadir Nuevo Estudiante
@@ -103,12 +131,14 @@ const RegistroAlumnos = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[1200px] w-full">
-              <div className="bg-white text-gray-500 text-xs font-bold uppercase tracking-widest grid grid-cols-[2.5fr_0.8fr_3fr_2fr_2.5fr_1fr_1fr] border-b text-center items-center">
+            <div className="min-w-[1400px] w-full">
+              <div className="bg-white text-gray-500 text-xs font-bold uppercase tracking-widest grid grid-cols-[2fr_0.5fr_0.9fr_2.1fr_1.5fr_0.8fr_1.8fr_0.8fr_0.6fr] border-b text-center items-center">
                 <div className="p-4 text-left">Nombre del Alumno</div>
                 <div className="p-4">Edad</div>
+                <div className="p-4 text-left">Género</div>
                 <div className="p-4 text-left">Dirección</div>
                 <div className="p-4 text-left">Nivel</div>
+                <div className="p-4">Sec.</div>
                 <div className="p-4 text-left">Representante</div>
                 <div className="p-4">Turno</div>
                 <div className="p-4">Expediente</div>
@@ -116,12 +146,18 @@ const RegistroAlumnos = () => {
 
               <div className="divide-y divide-gray-100">
                 {estudiantes.map((est) => (
-                  <div key={est.id} className="grid grid-cols-[2.5fr_0.8fr_3fr_2fr_2.5fr_1fr_1fr] hover:bg-gray-50 transition-colors items-center p-2">
+                  <div key={est.id} className="grid grid-cols-[2fr_0.5fr_0.9fr_2.1fr_1.5fr_0.8fr_1.8fr_0.8fr_0.6fr] hover:bg-gray-50 transition-colors items-center p-2">
                     <div className="px-2">
                       <input type="text" placeholder="Nombre completo" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none font-medium text-sm text-gray-800" value={est.nombre} onChange={(e) => handleInputChange(est.id, 'nombre', e.target.value)} />
                     </div>
                     <div className="px-2 text-center">
-                      <input type="number" placeholder="0" min="0" className="w-16 p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
+                      <input type="number" placeholder="0" min="0" className="w-full p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
+                    </div>
+                    <div className="px-2">
+                      <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.genero} onChange={(e) => handleInputChange(est.id, 'genero', e.target.value)}>
+                        <option value="">Seleccione...</option>
+                        {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
                     </div>
                     <div className="px-2">
                       <input type="text" placeholder="Dirección" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.direccion} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
@@ -129,6 +165,13 @@ const RegistroAlumnos = () => {
                     <div className="px-2">
                       <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.nivelEstudio} onChange={(e) => handleInputChange(est.id, 'nivelEstudio', e.target.value)}>
                         {opcionesNivel.map(nivel => <option key={nivel} value={nivel}>{nivel}</option>)}
+                      </select>
+                    </div>
+                    <div className="px-2">
+                      <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-bold text-center text-gray-700 text-sm cursor-pointer" value={est.seccion} onChange={(e) => handleInputChange(est.id, 'seccion', e.target.value)}>
+                        {obtenerSeccionesDisponibles(est.nivelEstudio, est.turno).map(sec => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="px-2">
@@ -140,7 +183,7 @@ const RegistroAlumnos = () => {
                       </select>
                     </div>
                     <div className="px-2 flex justify-center">
-                      <button 
+                      <button
                         onClick={() => setEstudianteActivoId(est.id)}
                         className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100"
                         title="Abrir expediente completo"
@@ -152,9 +195,9 @@ const RegistroAlumnos = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {estudiantes.length === 0 && (
-                  <div className="col-span-7 p-8 text-center text-gray-400 font-medium">
+                  <div className="col-span-9 p-8 text-center text-gray-400 font-medium">
                     No hay estudiantes registrados. Haz clic en "Añadir Nuevo Estudiante" para comenzar.
                   </div>
                 )}
@@ -168,7 +211,7 @@ const RegistroAlumnos = () => {
       {estudianteActivo && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            
+
             <div className="p-5 border-b flex justify-between items-center bg-[#002366] text-white">
               <div>
                 <h2 className="text-xl font-bold">
@@ -178,9 +221,9 @@ const RegistroAlumnos = () => {
               </div>
               <button onClick={cerrarExpediente} className="text-white hover:text-gray-300 text-3xl leading-none">&times;</button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto bg-gray-50/50">
-              
+
               {/* SECCIÓN 1: DATOS DEL ESTUDIANTE */}
               <div className="mb-8 bg-white p-6 rounded-xl border shadow-sm">
                 <h3 className="text-lg font-black text-[#0F172A] mb-4 border-b pb-2 flex items-center">
@@ -200,22 +243,56 @@ const RegistroAlumnos = () => {
                     <input type="date" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.fechaNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 'fechaNacimiento', e.target.value)} />
                   </div>
                   <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Edad del Alumno</label>
+                    <input type="number" min="0" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.edad} onChange={(e) => handleInputChange(estudianteActivo.id, 'edad', e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Género</label>
+                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.genero} onChange={(e) => handleInputChange(estudianteActivo.id, 'genero', e.target.value)}>
+                      <option value="">Seleccione...</option>
+                      {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Nivel Académico de Ingreso</label>
+                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.nivelEstudio} onChange={(e) => handleInputChange(estudianteActivo.id, 'nivelEstudio', e.target.value)}>
+                      {opcionesNivel.map(nivel => <option key={nivel} value={nivel}>{nivel}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Turno Asignado</label>
+                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.turno} onChange={(e) => handleInputChange(estudianteActivo.id, 'turno', e.target.value)}>
+                      {opcionesTurno.map(turno => <option key={turno} value={turno}>{turno}</option>)}
+                    </select>
+                  </div>
+
+                  {/* DISEÑO DE SECCIÓN CORREGIDO: AHORA INTEGRADO AL ESTILO DE LOS DEMÁS SELECTS */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Sección Asignada</label>
+                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700 cursor-pointer" value={estudianteActivo.seccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'seccion', e.target.value)}>
+                      {obtenerSeccionesDisponibles(estudianteActivo.nivelEstudio, estudianteActivo.turno).map(sec => (
+                        <option key={sec} value={sec}>Sección {sec}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Condición (Neurodiversidad)</label>
                     <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.condicion} onChange={(e) => handleInputChange(estudianteActivo.id, 'condicion', e.target.value)}>
                       {opcionesCondicion.map(cond => <option key={cond} value={cond}>{cond}</option>)}
                     </select>
                   </div>
-                  <div className="md:col-span-3">
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
-                    <textarea className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" rows="2" value={estudianteActivo.direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'direccion', e.target.value)}></textarea>
-                  </div>
-                  <div className="md:col-span-1">
+                  <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
                     <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Institucional</label>
                     <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteInstitucional} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteInstitucional', e.target.value)} />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
+                    <textarea className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" rows="2" value={estudianteActivo.direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'direccion', e.target.value)}></textarea>
                   </div>
                 </div>
               </div>
@@ -275,10 +352,10 @@ const RegistroAlumnos = () => {
                   </div>
                   <div className="md:col-span-2">
                     <label className={`block text-xs font-bold mb-1 ${estudianteActivo.repTrabaja === 'Sí' ? 'text-gray-600' : 'text-gray-400'}`}>¿Dónde trabaja?</label>
-                    <input 
-                      type="text" 
-                      className={`w-full p-2 border rounded outline-none text-sm ${estudianteActivo.repTrabaja === 'Sí' ? 'focus:border-purple-500 bg-white text-gray-800' : 'bg-gray-100 cursor-not-allowed text-gray-400'}`} 
-                      value={estudianteActivo.repDondeTrabaja} 
+                    <input
+                      type="text"
+                      className={`w-full p-2 border rounded outline-none text-sm ${estudianteActivo.repTrabaja === 'Sí' ? 'focus:border-purple-500 bg-white text-gray-800' : 'bg-gray-100 cursor-not-allowed text-gray-400'}`}
+                      value={estudianteActivo.repDondeTrabaja}
                       onChange={(e) => handleInputChange(estudianteActivo.id, 'repDondeTrabaja', e.target.value)}
                       disabled={estudianteActivo.repTrabaja === 'No'}
                       placeholder={estudianteActivo.repTrabaja === 'No' ? 'No aplica' : 'Empresa o lugar de trabajo'}
@@ -309,29 +386,33 @@ const RegistroAlumnos = () => {
               </div>
               <button onClick={() => setShowModal(false)} className="text-white hover:text-gray-200 text-3xl leading-none">&times;</button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto bg-gray-50">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {estudiantes.filter(e => e.nombre.trim() !== "").map((est) => (
-                  <div 
-                    key={est.id} 
-                    onClick={() => verExpedienteDesdeListado(est.id)} 
+                  <div
+                    key={est.id}
+                    onClick={() => verExpedienteDesdeListado(est.id)}
                     className="p-4 bg-white hover:bg-purple-50/50 border border-gray-200 hover:border-purple-400 rounded-xl shadow-sm flex flex-col gap-1 relative overflow-hidden cursor-pointer transition-all hover:scale-[1.01] active:scale-95 group"
                   >
                     {est.condicion !== 'Ninguna' && (
-                       <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" title={`Condición: ${est.condicion}`}></div>
+                      <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" title={`Condición: ${est.condicion}`}></div>
                     )}
-                    
+
                     <div className="flex justify-between items-start">
                       <p className="font-black text-gray-800 uppercase text-sm tracking-wide group-hover:text-purple-700 transition-colors">{est.nombre}</p>
                       <div className="flex gap-1">
                         <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{est.nivelEstudio}</span>
+                        <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{est.turno}</span>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-black">Sec. "{est.seccion}"</span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-600"><span className="font-semibold text-gray-400">Edad:</span> {est.edad || '—'} años | <span className="font-semibold text-gray-400">C.E:</span> {est.cedulaEscolar || '—'}</p>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold text-gray-400">Edad:</span> {est.edad || '—'} años | {est.genero && <span className="text-gray-700 font-medium">({est.genero}) | </span>} <span className="font-semibold text-gray-400">C.E:</span> {est.cedulaEscolar || '—'}
+                    </p>
                     <p className="text-xs text-gray-600 truncate"><span className="font-semibold text-gray-400">Dir:</span> {est.direccion || '—'}</p>
                     <p className="text-xs text-blue-900 font-medium mt-1 border-t pt-1 border-dashed border-gray-100">
-                      <span className="font-semibold text-gray-400">Rep:</span> {est.repNombre || '—'} 
+                      <span className="font-semibold text-gray-400">Rep:</span> {est.repNombre || '—'}
                       {est.repTelefono && ` (${est.repTelefono})`}
                     </p>
                     <div className="text-[10px] text-right text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity font-bold mt-1">
@@ -339,7 +420,7 @@ const RegistroAlumnos = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {estudiantes.filter(e => e.nombre.trim() !== "").length === 0 && (
                   <p className="col-span-2 text-center text-gray-400 py-10 font-medium">No hay estudiantes con nombres asignados en la lista.</p>
                 )}
