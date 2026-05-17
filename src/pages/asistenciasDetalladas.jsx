@@ -233,7 +233,7 @@ const AsistenciasDetalladas = () => {
                   key={seccion}
                   className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
                 >
-                  <div className="bg-purple-700 p-3 text-sm font-black text-white uppercase">
+                  <div className="bg-white p-3 text-sm font-black text-purple-800 uppercase">
                     Nivel: {nivelSeleccionado} — Sección "{seccion}" (
                     {turnoSeleccionado})
                   </div>
@@ -301,7 +301,7 @@ const AsistenciasDetalladas = () => {
       {showResumen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 bg-purple-950 text-white shrink-0">
+            <div className="p-6 bg-blue-700 text-white shrink-0">
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h2 className="text-2xl font-black">
@@ -319,7 +319,7 @@ const AsistenciasDetalladas = () => {
                 </button>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 items-center bg-purple-900/40 p-3 rounded-xl border border-purple-800">
+              <div className="flex flex-col sm:flex-row gap-4 items-center bg-blue-900/40 p-3 rounded-xl border border-purple-800">
                 <div className="relative w-full sm:flex-1">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-purple-300">
                     🔍
@@ -329,10 +329,10 @@ const AsistenciasDetalladas = () => {
                     placeholder="Buscar alumno, nivel o sección..."
                     value={busquedaModal}
                     onChange={(e) => setBusquedaModal(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-purple-900/60 border border-purple-700 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                    className="w-full pl-9 pr-4 py-2 bg-blue-900/60 border border-blue-700 rounded-lg text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
                   />
                 </div>
-                <div className="flex bg-purple-900 p-1 rounded-lg border border-purple-700 font-bold text-xs">
+                <div className="flex bg-blue-900 p-1 rounded-lg border border-blue-700 font-bold text-xs">
                   <button
                     onClick={() => setVistaTabular(false)}
                     className={`px-3 py-1.5 rounded-md transition-all ${!vistaTabular ? "bg-purple-700 text-white shadow" : "text-purple-300 hover:text-white"}`}
@@ -368,7 +368,7 @@ const AsistenciasDetalladas = () => {
                         key={alumno.id}
                         className="bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden"
                       >
-                        <div className="bg-gradient-to-r from-purple-800 to-indigo-900 p-4 text-white flex justify-between items-start">
+                        <div className="bg-gradient-to-r from-blue-400 to-blue-500 p-4 text-white flex justify-between items-start">
                           <div>
                             <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded">
                               {alumno.nivel} — Sec. "{alumno.seccion}"
@@ -418,9 +418,9 @@ const AsistenciasDetalladas = () => {
                 <div className="bg-white rounded-xl shadow border overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left min-w-[1200px] text-xs">
-                      <thead className="bg-purple-900 text-white sticky top-0">
+                      <thead className="bg-blue-700 text-white sticky top-0">
                         <tr>
-                          <th className="p-3 sticky left-0 bg-purple-900 shadow-[2px_0_5px_rgba(0,0,0,0.1)] font-bold">
+                          <th className="p-3 sticky left-0 bg-blue-550 shadow-[2px_0_5px_rgba(0,0,0,0.1)] font-bold">
                             Estudiante
                           </th>
                           <th className="p-3 text-center">Aula / Sección</th>
@@ -428,7 +428,7 @@ const AsistenciasDetalladas = () => {
                             <th
                               key={sem}
                               colSpan={5}
-                              className="text-center bg-purple-950 font-black p-1 text-[10px]"
+                              className="text-center bg-purple-650 font-black p-1 text-[10px]"
                             >
                               {sem.toUpperCase()}
                             </th>

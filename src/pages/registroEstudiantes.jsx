@@ -470,7 +470,7 @@ const RegistroAlumnos = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b flex justify-between items-center bg-purple-700 text-white">
+            <div className="p-6 border-b flex justify-between items-center bg-blue-700 text-white">
               <div>
                 <h2 className="text-xl font-bold">Alumnos Registrados</h2>
                 <p className="text-xs text-purple-200">Haz clic sobre cualquier tarjeta para ver o editar su expediente completo.</p>
