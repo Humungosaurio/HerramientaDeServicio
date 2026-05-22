@@ -2,38 +2,85 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const RegistroAlumnos = () => {
-  // El estado inicializa vacío para no mostrar casillas por defecto
   const [estudiantes, setEstudiantes] = useState([]);
-
   const [showModal, setShowModal] = useState(false);
   const [estudianteActivoId, setEstudianteActivoId] = useState(null);
+  
+  // Estado para controlar el texto de búsqueda independiente
+  const [busquedaAcademica, setBusquedaAcademica] = useState("");
+  const [dropdownAbiertoId, setDropdownAbiertoId] = useState(null);
 
-  const opcionesNivel = ['Maternal', '1er Nivel', '2do Nivel', '3er Nivel'];
-  const opcionesTurno = ['Mañana', 'Tarde'];
   const opcionesCondicion = ['Ninguna', 'Autismo (TEA)', 'TDAH', 'Dislexia', 'Otra'];
-  const opcionesGenero = ['Masculino', 'Femenino', 'Otro'];
+  const opcionesGenero = ['Masculino', 'Femenino'];
 
-  // Función dinámica para calcular las secciones según las reglas del plantel
-  const obtenerSeccionesDisponibles = (nivel, turno) => {
-    if (nivel === 'Maternal') {
-      return ['A']; // Una sección en la mañana y una en la tarde
+  // 1. Definición exacta de las reglas de tu plantel
+  const reglasPlantel = [
+    {
+      nivel: 'Maternal',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A'] },
+        { turno: 'Tarde', secciones: ['B'] }
+      ]
+    },
+    {
+      nivel: '1er Nivel',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A', 'B'] },
+        { turno: 'Tarde', secciones: ['C', 'D'] }
+      ]
+    },
+    {
+      nivel: '2do Nivel',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A', 'B'] },
+        { turno: 'Tarde', secciones: ['C', 'D'] }
+      ]
+    },
+    {
+      nivel: '3er Nivel',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A'] },
+        { turno: 'Tarde', secciones: ['B', 'C'] }
+      ]
     }
-    if (nivel === '1er Nivel' || nivel === '2do Nivel') {
-      return ['A', 'B']; // Dos secciones por turno
-    }
-    if (nivel === '3er Nivel') {
-      return turno === 'Mañana' ? ['A', 'B'] : ['A']; // Dos en la mañana, una en la tarde
-    }
-    return ['A'];
-  };
+  ];
+
+  // 2. Generación automática de las opciones para el buscador
+  const opcionesAcademicas = [];
+  reglasPlantel.forEach(regla => {
+    regla.distribucion.forEach(dist => {
+      dist.secciones.forEach(seccion => {
+        opcionesAcademicas.push({
+          id: `${dist.turno}-${regla.nivel}-${seccion}`.toLowerCase().replace(/ /g, '_'),
+          label: `${dist.turno} - ${regla.nivel} - Sección "${seccion}"`,
+          valores: { nivelEstudio: regla.nivel, turno: dist.turno, seccion: seccion }
+        });
+      });
+    });
+  });
+
+  // NUEVO FILTRADO INTELIGENTE: Divide la búsqueda en palabras sueltas
+  const opcionesFiltradas = opcionesAcademicas.filter(opt => {
+    // Si no hay búsqueda, mostrar todo
+    if (!busquedaAcademica.trim()) return true;
+
+    // Limpiamos y separamos lo que escribió el usuario por espacios (ej: ["tarde", "1"])
+    const palabrasBusqueda = busquedaAcademica.toLowerCase().trim().split(/\s+/);
+    const textoOpcion = opt.label.toLowerCase();
+
+    // La opción es válida si contiene TODAS las palabras escritas por el usuario
+    return palabrasBusqueda.every(palabra => textoOpcion.includes(palabra));
+  });
 
   const agregarFila = () => {
     const nuevoId = Date.now();
+    const defectoAcademico = opcionesAcademicas[0].valores;
+
     const nuevoEstudiante = {
       id: nuevoId,
       nombre: '', edad: '', genero: '', direccion: '', 
-      nivelEstudio: 'Maternal', turno: 'Mañana', seccion: 'A',
-      cedulaEscolar: '', fechaNacimiento: '', condicion: 'Ninguna', representanteLegal: '', representanteInstitucional: '',
+      ...defectoAcademico,
+      cedulaEscolar: '', fechaNacimiento: '', condicion: 'Ninguna', representanteLegal: '', representativeInstitucional: '',
       repNombre: '', repCi: '', repFechaLugarNac: '', repDireccion: '', repTrabaja: 'No', repDondeTrabaja: '', repEdad: '', repGradoInstruccion: '', repTelefono: '', repCorreo: ''
     };
 
@@ -45,21 +92,17 @@ const RegistroAlumnos = () => {
     setEstudiantes(prevEstudiantes =>
       prevEstudiantes.map(est => {
         if (est.id === id) {
-          let copiaEstudiante = { ...est, [campo]: valor };
+          let copiaEstudiante = { ...est };
+
+          if (campo === 'combinacionAcademica') {
+            copiaEstudiante = { ...copiaEstudiante, ...valor };
+          } else {
+            copiaEstudiante[campo] = valor;
+          }
 
           if ((campo === 'edad' || campo === 'repEdad') && valor !== "") {
             const num = parseInt(valor);
             copiaEstudiante[campo] = num < 0 ? "0" : valor;
-          }
-
-          if (campo === 'nivelEstudio' || campo === 'turno') {
-            const seccionesValidas = obtenerSeccionesDisponibles(
-              copiaEstudiante.nivelEstudio,
-              copiaEstudiante.turno
-            );
-            if (!seccionesValidas.includes(copiaEstudiante.seccion)) {
-              copiaEstudiante.seccion = seccionesValidas[0];
-            }
           }
 
           return copiaEstudiante;
@@ -69,12 +112,19 @@ const RegistroAlumnos = () => {
     );
   };
 
+  const seleccionarOpcionAcademica = (estudianteId, opcion) => {
+    handleInputChange(estudianteId, 'combinacionAcademica', opcion.valores);
+    setDropdownAbiertoId(null);
+    setBusquedaAcademica("");
+  };
+
   const cerrarExpediente = () => {
     const estudianteActual = estudiantes.find(est => est.id === estudianteActivoId);
     if (estudianteActual && estudianteActual.nombre.trim() === '') {
       setEstudiantes(prev => prev.filter(est => est.id !== estudianteActivoId));
     }
     setEstudianteActivoId(null);
+    setDropdownAbiertoId(null);
   };
 
   const verExpedienteDesdeListado = (id) => {
@@ -131,73 +181,97 @@ const RegistroAlumnos = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <div className="min-w-[1400px] w-full">
-              <div className="bg-white text-gray-500 text-xs font-bold uppercase tracking-widest grid grid-cols-[2fr_0.5fr_0.9fr_2.1fr_1.5fr_0.8fr_1.8fr_0.8fr_0.6fr] border-b text-center items-center">
+            <div className="min-w-[1200px] w-full">
+              <div className="bg-white text-gray-500 text-xs font-bold uppercase tracking-widest grid grid-cols-[2fr_0.5fr_0.9fr_2fr_3.5fr_1.8fr_0.6fr] border-b text-center items-center">
                 <div className="p-4 text-left">Nombre del Alumno</div>
                 <div className="p-4">Edad</div>
                 <div className="p-4 text-left">Género</div>
                 <div className="p-4 text-left">Dirección</div>
-                <div className="p-4 text-left">Nivel</div>
-                <div className="p-4">Sec.</div>
+                <div className="p-4 text-left">Asignación Académica (Escribe para filtrar)</div>
                 <div className="p-4 text-left">Representante</div>
-                <div className="p-4">Turno</div>
                 <div className="p-4">Expediente</div>
               </div>
 
               <div className="divide-y divide-gray-100">
-                {estudiantes.map((est) => (
-                  <div key={est.id} className="grid grid-cols-[2fr_0.5fr_0.9fr_2.1fr_1.5fr_0.8fr_1.8fr_0.8fr_0.6fr] hover:bg-gray-50 transition-colors items-center p-2">
-                    <div className="px-2">
-                      <input type="text" placeholder="Nombre completo" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none font-medium text-sm text-gray-800" value={est.nombre} onChange={(e) => handleInputChange(est.id, 'nombre', e.target.value)} />
+                {estudiantes.map((est) => {
+                  const textoAsignacionActual = `${est.turno} - ${est.nivelEstudio} - Sección "${est.seccion}"`;
+                  const esDropdownAbierto = dropdownAbiertoId === est.id;
+
+                  return (
+                    <div key={est.id} className="grid grid-cols-[2fr_0.5fr_0.9fr_2fr_3.5fr_1.8fr_0.6fr] hover:bg-gray-50 transition-colors items-center p-2">
+                      <div className="px-2">
+                        <input type="text" placeholder="Nombre completo" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none font-medium text-sm text-gray-800" value={est.nombre} onChange={(e) => handleInputChange(est.id, 'nombre', e.target.value)} />
+                      </div>
+                      <div className="px-2 text-center">
+                        <input type="number" placeholder="0" min="0" className="w-full p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
+                      </div>
+                      <div className="px-2">
+                        <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.genero} onChange={(e) => handleInputChange(est.id, 'genero', e.target.value)}>
+                          <option value="">Seleccione...</option>
+                          {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </div>
+                      <div className="px-2">
+                        <input type="text" placeholder="Dirección" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.direccion} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
+                      </div>
+                      
+                      {/* BUSCADOR EN TABLA MULTI-PALABRA */}
+                      <div className="px-2 relative">
+                        <div className="flex items-center justify-between p-2 border border-gray-200 rounded bg-white focus-within:border-purple-400">
+                          <input 
+                            type="text" 
+                            className="w-full bg-transparent outline-none font-semibold text-gray-700 text-sm"
+                            placeholder="Buscar turno o nivel..."
+                            value={esDropdownAbierto ? busquedaAcademica : textoAsignacionActual}
+                            onFocus={() => {
+                              setDropdownAbiertoId(est.id);
+                              setBusquedaAcademica("");
+                            }}
+                            onChange={(e) => setBusquedaAcademica(e.target.value)}
+                          />
+                          <span className="text-gray-400 text-xs ml-1 pointer-events-none">▼</span>
+                        </div>
+
+                        {esDropdownAbierto && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
+                            <div className="absolute left-2 right-2 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
+                              {opcionesFiltradas.map(opt => (
+                                <div 
+                                  key={opt.id}
+                                  onClick={() => seleccionarOpcionAcademica(est.id, opt)}
+                                  className="p-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 font-medium cursor-pointer transition-colors"
+                                >
+                                  {opt.label}
+                                </div>
+                              ))}
+                              {opcionesFiltradas.length === 0 && (
+                                <div className="p-3 text-xs text-gray-400 italic text-center">No se encontraron resultados</div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="px-2">
+                        <input type="text" placeholder="Nombre representante" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
+                      </div>
+                      <div className="px-2 flex justify-center">
+                        <button
+                          onClick={() => setEstudianteActivoId(est.id)}
+                          className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <div className="px-2 text-center">
-                      <input type="number" placeholder="0" min="0" className="w-full p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
-                    </div>
-                    <div className="px-2">
-                      <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.genero} onChange={(e) => handleInputChange(est.id, 'genero', e.target.value)}>
-                        <option value="">Seleccione...</option>
-                        {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </div>
-                    <div className="px-2">
-                      <input type="text" placeholder="Dirección" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.direccion} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
-                    </div>
-                    <div className="px-2">
-                      <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.nivelEstudio} onChange={(e) => handleInputChange(est.id, 'nivelEstudio', e.target.value)}>
-                        {opcionesNivel.map(nivel => <option key={nivel} value={nivel}>{nivel}</option>)}
-                      </select>
-                    </div>
-                    <div className="px-2">
-                      <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-bold text-center text-gray-700 text-sm cursor-pointer" value={est.seccion} onChange={(e) => handleInputChange(est.id, 'seccion', e.target.value)}>
-                        {obtenerSeccionesDisponibles(est.nivelEstudio, est.turno).map(sec => (
-                          <option key={sec} value={sec}>{sec}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="px-2">
-                      <input type="text" placeholder="Nombre representante" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
-                    </div>
-                    <div className="px-2">
-                      <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.turno} onChange={(e) => handleInputChange(est.id, 'turno', e.target.value)}>
-                        {opcionesTurno.map(turno => <option key={turno} value={turno}>{turno}</option>)}
-                      </select>
-                    </div>
-                    <div className="px-2 flex justify-center">
-                      <button
-                        onClick={() => setEstudianteActivoId(est.id)}
-                        className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100"
-                        title="Abrir expediente completo"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {estudiantes.length === 0 && (
-                  <div className="col-span-9 p-8 text-center text-gray-400 font-medium">
+                  <div className="col-span-7 p-8 text-center text-gray-400 font-medium">
                     No hay estudiantes registrados. Haz clic en "Añadir Nuevo Estudiante" para comenzar.
                   </div>
                 )}
@@ -253,27 +327,44 @@ const RegistroAlumnos = () => {
                       {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Nivel Académico de Ingreso</label>
-                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.nivelEstudio} onChange={(e) => handleInputChange(estudianteActivo.id, 'nivelEstudio', e.target.value)}>
-                      {opcionesNivel.map(nivel => <option key={nivel} value={nivel}>{nivel}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Turno Asignado</label>
-                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.turno} onChange={(e) => handleInputChange(estudianteActivo.id, 'turno', e.target.value)}>
-                      {opcionesTurno.map(turno => <option key={turno} value={turno}>{turno}</option>)}
-                    </select>
-                  </div>
 
-                  {/* DISEÑO DE SECCIÓN CORREGIDO: AHORA INTEGRADO AL ESTILO DE LOS DEMÁS SELECTS */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Sección Asignada</label>
-                    <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700 cursor-pointer" value={estudianteActivo.seccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'seccion', e.target.value)}>
-                      {obtenerSeccionesDisponibles(estudianteActivo.nivelEstudio, estudianteActivo.turno).map(sec => (
-                        <option key={sec} value={sec}>Sección {sec}</option>
-                      ))}
-                    </select>
+                  {/* BUSCADOR EN EL MODAL MULTI-PALABRA */}
+                  <div className="md:col-span-2 relative">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Asignación Académica Asignada</label>
+                    <div className="flex items-center justify-between p-2 border rounded bg-white focus-within:border-blue-500">
+                      <input 
+                        type="text" 
+                        className="w-full bg-transparent outline-none font-medium text-sm text-gray-700"
+                        placeholder="Buscar turno o nivel..."
+                        value={dropdownAbiertoId === 'modal' ? busquedaAcademica : `${estudianteActivo.turno} - ${estudianteActivo.nivelEstudio} - Sección "${estudianteActivo.seccion}"`}
+                        onFocus={() => {
+                          setDropdownAbiertoId('modal');
+                          setBusquedaAcademica("");
+                        }}
+                        onChange={(e) => setBusquedaAcademica(e.target.value)}
+                      />
+                      <span className="text-gray-400 text-xs ml-1 pointer-events-none">▼</span>
+                    </div>
+
+                    {dropdownAbiertoId === 'modal' && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
+                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
+                          {opcionesFiltradas.map(opt => (
+                            <div 
+                              key={opt.id}
+                              onClick={() => seleccionarOpcionAcademica(estudianteActivo.id, opt)}
+                              className="p-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-medium cursor-pointer transition-colors"
+                            >
+                              {opt.label}
+                            </div>
+                          ))}
+                          {opcionesFiltradas.length === 0 && (
+                            <div className="p-3 text-xs text-gray-400 italic text-center">No se encontraron resultados</div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div>
@@ -379,7 +470,7 @@ const RegistroAlumnos = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b flex justify-between items-center bg-purple-700 text-white">
+            <div className="p-6 border-b flex justify-between items-center bg-blue-700 text-white">
               <div>
                 <h2 className="text-xl font-bold">Alumnos Registrados</h2>
                 <p className="text-xs text-purple-200">Haz clic sobre cualquier tarjeta para ver o editar su expediente completo.</p>
@@ -422,7 +513,7 @@ const RegistroAlumnos = () => {
                 ))}
 
                 {estudiantes.filter(e => e.nombre.trim() !== "").length === 0 && (
-                  <p className="col-span-2 text-center text-gray-400 py-10 font-medium">No hay estudiantes con nombres asignados en la lista.</p>
+                  <p className="col-span-2 text-center text-gray-400 py-10 font-medium">No hay estudiantes con nombres asignados in la lista.</p>
                 )}
               </div>
             </div>
