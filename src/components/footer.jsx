@@ -25,7 +25,7 @@ const Footer = () => {
           {/* Logo e Identidad */}
           <div className="flex items-center gap-2">
             <img 
-              src="/src/assets/WhatsApp Image 2026-05-08 at 4.54.11 PM.jpeg" 
+              src="/src/assets/LogoReceptoria.png" 
               alt="Logo" 
               className="w-7 h-7 object-contain"
             />

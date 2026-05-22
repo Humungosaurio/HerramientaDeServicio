@@ -10,9 +10,9 @@ const Navbar = () => {
         
         {/* Lado Izquierdo: LOGO DEL COLEGIO */}
         <div className="flex items-center z-10">
-          <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+          <div className="w-15 h-15 flex items-center justify-center overflow-hidden">
             <img 
-              src="/src/assets/WhatsApp Image 2026-05-08 at 4.54.11 PM.jpeg" // <--- Asegúrate de que el nombre coincida con tu archivo
+              src="/src/assets/LogoReceptoria.png" // <--- Asegúrate de que el nombre coincida con tu archivo
               alt="Logo C.E.I Simoncito"
               className="w-full h-full object-contain"
             />
@@ -59,7 +59,7 @@ const Navbar = () => {
         <div>
           <div className="flex items-center justify-between border-b pb-4 mb-6">
             <div className="flex items-center gap-2">
-              <img src="/src/assets/WhatsApp Image 2026-05-08 at 4.54.11 PM.jpeg" alt="mini logo" className="w-6 h-6 object-contain" />
+              <img src="/src/assets/LogoReceptoria.png" alt="mini logo" className="w-6 h-6 object-contain" />
               <h3 className="text-lg font-black text-gray-800">Menú del Sistema</h3>
             </div>
             <button 

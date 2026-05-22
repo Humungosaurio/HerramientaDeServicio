@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const AsistenciasProfesores = () => {
+const AsistenciasPersonal = () => {
   // 1. Estados de control de la interfaz
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('Mañana');
   const [semanaSeleccionada, setSemanaSeleccionada] = useState('Semana 1');
   const [showResumen, setShowResumen] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState('');
 
-  // Estructura limpia: Cada turno tiene su lista de profesores.
-  const [datosProfesores, setDatosProfesores] = useState({
+  // Estructura limpia: Cada turno tiene su lista de colaboradores/personal.
+  const [datosPersonal, setDatosPersonal] = useState({
     Mañana: [],
     Tarde: []
   });
@@ -19,33 +19,33 @@ const AsistenciasProfesores = () => {
 
   // 2. Manejador para cambiar la asistencia de un día en la semana activa
   const handleDiaChange = (id, dia) => {
-    setDatosProfesores(prev => ({
+    setDatosPersonal(prev => ({
       ...prev,
-      [turnoSeleccionado]: prev[turnoSeleccionado].map(profesor =>
-        profesor.id === id
+      [turnoSeleccionado]: prev[turnoSeleccionado].map(empleado =>
+        empleado.id === id
           ? {
-            ...profesor,
-            asistencias: {
-              ...profesor.asistencias,
-              [semanaSeleccionada]: {
-                ...profesor.asistencias[semanaSeleccionada],
-                [dia]: !profesor.asistencias[semanaSeleccionada][dia]
+              ...empleado,
+              asistencias: {
+                ...empleado.asistencias,
+                [semanaSeleccionada]: {
+                  ...empleado.asistencias[semanaSeleccionada],
+                  [dia]: !empleado.asistencias[semanaSeleccionada][dia]
+                }
               }
             }
-          }
-          : profesor
+          : empleado
       )
     }));
   };
 
-  // Agregar un nuevo profesor con las 4 semanas inicializadas por separado
-  const agregarProfesor = (e) => {
+  // Agregar un nuevo miembro del personal con las 4 semanas inicializadas por separado
+  const agregarPersonal = (e) => {
     e.preventDefault();
     if (!nuevoNombre.trim()) return;
 
     const diasBase = { Lunes: false, Martes: false, Miércoles: false, Jueves: false, Viernes: false };
 
-    const nuevoProfesor = {
+    const nuevoEmpleado = {
       id: Date.now(),
       nombre: nuevoNombre.trim(),
       asistencias: {
@@ -56,16 +56,16 @@ const AsistenciasProfesores = () => {
       }
     };
 
-    setDatosProfesores(prev => ({
+    setDatosPersonal(prev => ({
       ...prev,
-      [turnoSeleccionado]: [...prev[turnoSeleccionado], nuevoProfesor]
+      [turnoSeleccionado]: [...prev[turnoSeleccionado], nuevoEmpleado]
     }));
     setNuevoNombre('');
   };
 
-  // Cuenta cuántos días asistió un profesor en la semana actual seleccionada
-  const contarDiasAsistidos = (profesor, semana) => {
-    const semanaDias = profesor.asistencias[semana] || {};
+  // Cuenta cuántos días asistió un empleado en la semana actual seleccionada
+  const contarDiasAsistidos = (empleado, semana) => {
+    const semanaDias = empleado.asistencias[semana] || {};
     return Object.values(semanaDias).filter(Boolean).length;
   };
 
@@ -79,15 +79,15 @@ const AsistenciasProfesores = () => {
 
         {/* SIDEBAR / PANEL DE AGREGAR */}
         <aside className="md:w-1/4 bg-white p-6 rounded-xl border border-gray-100 shadow-md h-fit">
-          <h2 className="text-lg font-black text-gray-800 mb-4">Agregar Profesor</h2>
-          <form onSubmit={agregarProfesor} className="flex flex-col gap-3">
+          <h2 className="text-lg font-black text-gray-800 mb-4">Registrar Personal</h2>
+          <form onSubmit={agregarPersonal} className="flex flex-col gap-3">
             <div>
               <label className="text-xs font-bold text-purple-600 uppercase">Nombre Completo</label>
               <input
                 type="text"
                 value={nuevoNombre}
                 onChange={(e) => setNuevoNombre(e.target.value)}
-                placeholder="Ej. Prof. Juan Paul"
+                placeholder="Ej. Carlos Mendoza"
                 className="w-full mt-1 p-2 border rounded-lg text-sm text-gray-700 focus:outline-none focus:border-purple-500"
               />
             </div>
@@ -104,8 +104,8 @@ const AsistenciasProfesores = () => {
         <main className="flex-1">
           <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-4">
             <div>
-              <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">Módulo de Personal</p>
-              <h1 className="text-3xl font-black text-white">Asistencia — {semanaSeleccionada}</h1>
+              <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">Módulo de Recursos Humanos</p>
+              <h1 className="text-3xl font-black text-white">Control de Personal — {semanaSeleccionada}</h1>
             </div>
 
             {/* BOTONES DE ACCIÓN */}
@@ -117,7 +117,7 @@ const AsistenciasProfesores = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Ver Totales
+                Ver Totales Mensuales
               </button>
 
               <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center">
@@ -170,28 +170,28 @@ const AsistenciasProfesores = () => {
             <table className="w-full">
               <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
                 <tr>
-                  <th className="p-4 text-left">Profesor / Docente</th>
+                  <th className="p-4 text-left">Colaborador / Empleado</th>
                   {diasSemana.map(dia => (
                     <th key={dia} className="p-4 text-center bg-purple-50/50 text-purple-900 font-black">{dia}</th>
                   ))}
-                  <th className="p-4 text-center bg-purple-50 text-purple-700">Días Semanales</th>
+                  <th className="p-4 text-center bg-purple-50 text-purple-700">Días Laborados</th>
                 </tr>
               </thead>
               <tbody>
-                {datosProfesores[turnoSeleccionado].length === 0 ? (
+                {datosPersonal[turnoSeleccionado].length === 0 ? (
                   <tr>
                     <td colSpan="7" className="p-8 text-center text-gray-400 italic">
-                      No hay profesores registrados en este turno.
+                      No hay personal registrado en este turno.
                     </td>
                   </tr>
                 ) : (
-                  datosProfesores[turnoSeleccionado].map((profesor) => (
-                    <tr key={profesor.id} className="border-t hover:bg-gray-50 transition-colors">
-                      <td className="p-4 font-bold text-gray-700 text-left">{profesor.nombre}</td>
+                  datosPersonal[turnoSeleccionado].map((empleado) => (
+                    <tr key={empleado.id} className="border-t hover:bg-gray-50 transition-colors">
+                      <td className="p-4 font-bold text-gray-700 text-left">{empleado.nombre}</td>
 
-                      {/* Celdas con los Switches deslizantes (Estilo Estudiantes) */}
+                      {/* Celdas con los Switches deslizantes */}
                       {diasSemana.map(dia => {
-                        const asistioEseDia = profesor.asistencias[semanaSeleccionada]?.[dia] || false;
+                        const asistioEseDia = empleado.asistencias[semanaSeleccionada]?.[dia] || false;
                         return (
                           <td key={dia} className="p-4 text-center">
                             <div className="flex justify-center items-center min-h-[40px]">
@@ -199,7 +199,7 @@ const AsistenciasProfesores = () => {
                                 <input
                                   type="checkbox"
                                   checked={asistioEseDia}
-                                  onChange={() => handleDiaChange(profesor.id, dia)}
+                                  onChange={() => handleDiaChange(empleado.id, dia)}
                                   className="sr-only peer"
                                 />
                                 {/* El Switch Deslizante */}
@@ -212,7 +212,7 @@ const AsistenciasProfesores = () => {
 
                       {/* Contador total de la semana seleccionada */}
                       <td className="p-4 bg-purple-50/50 font-black text-purple-700 text-center text-lg">
-                        {contarDiasAsistidos(profesor, semanaSeleccionada)} / 5
+                        {contarDiasAsistidos(empleado, semanaSeleccionada)} / 5
                       </td>
                     </tr>
                   ))
@@ -229,8 +229,8 @@ const AsistenciasProfesores = () => {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden">
             <div className="p-6 border-b bg-blue-600 text-white flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-black">Resumen Completo Mensual</h2>
-                <p className="text-blue-100 text-sm">Desglose de asistencia por Profesor de las 4 Semanas</p>
+                <h2 className="text-2xl font-black">Resumen Mensual de Asistencias</h2>
+                <p className="text-blue-100 text-sm">Desglose del estado del personal durante las 4 semanas</p>
               </div>
               <button onClick={() => setShowResumen(false)} className="text-3xl hover:text-gray-200">&times;</button>
             </div>
@@ -242,13 +242,13 @@ const AsistenciasProfesores = () => {
                 <div className="bg-white border rounded-xl p-5 shadow-sm">
                   <h3 className="text-lg font-black text-gray-800 border-b pb-2 mb-4 flex justify-between">
                     <span>Turno Mañana ☀️</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md">Total: {datosProfesores.Mañana.length} Docentes</span>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md">Total: {datosPersonal.Mañana.length} Empleados</span>
                   </h3>
-                  {datosProfesores.Mañana.length === 0 ? (
+                  {datosPersonal.Mañana.length === 0 ? (
                     <p className="text-sm text-gray-400 italic py-2">Sin registros de personal.</p>
                   ) : (
                     <div className="flex flex-col gap-4">
-                      {datosProfesores.Mañana.map(p => (
+                      {datosPersonal.Mañana.map(p => (
                         <div key={p.id} className="bg-gray-50 p-4 rounded-xl border">
                           <p className="font-bold text-purple-700 text-base mb-2">{p.nombre}</p>
                           <div className="grid grid-cols-1 gap-2">
@@ -279,13 +279,13 @@ const AsistenciasProfesores = () => {
                 <div className="bg-white border rounded-xl p-5 shadow-sm">
                   <h3 className="text-lg font-black text-gray-800 border-b pb-2 mb-4 flex justify-between">
                     <span>Turno Tarde 🌙</span>
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-md">Total: {datosProfesores.Tarde.length} Docentes</span>
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-md">Total: {datosPersonal.Tarde.length} Empleados</span>
                   </h3>
-                  {datosProfesores.Tarde.length === 0 ? (
+                  {datosPersonal.Tarde.length === 0 ? (
                     <p className="text-sm text-gray-400 italic py-2">Sin registros de personal.</p>
                   ) : (
                     <div className="flex flex-col gap-4">
-                      {datosProfesores.Tarde.map(p => (
+                      {datosPersonal.Tarde.map(p => (
                         <div key={p.id} className="bg-gray-50 p-4 rounded-xl border">
                           <p className="font-bold text-purple-700 text-base mb-2">{p.nombre}</p>
                           <div className="grid grid-cols-1 gap-2">
@@ -330,4 +330,4 @@ const AsistenciasProfesores = () => {
   );
 };
 
-export default AsistenciasProfesores;
+export default AsistenciasPersonal;

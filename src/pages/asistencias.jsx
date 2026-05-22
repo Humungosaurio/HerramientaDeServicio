@@ -26,23 +26,23 @@ const Asistencias = () => {
     return estructura;
   };
 
-  // 2. Estado de asistencias estructurado por Nivel -> Turno -> Sección -> Semana -> Día
+  // 2. Estado de asistencias con la NUEVA distribución exacta de tu plantel
   const [datosPorNivel, setDatosPorNivel] = useState({
     'Maternal': {
       Mañana: { A: generarEstructuraSemanas() },
-      Tarde: { A: generarEstructuraSemanas() }
+      Tarde: { B: generarEstructuraSemanas() }
     },
     '1er Nivel': {
       Mañana: { A: generarEstructuraSemanas(), B: generarEstructuraSemanas() },
-      Tarde: { A: generarEstructuraSemanas(), B: generarEstructuraSemanas() }
+      Tarde: { C: generarEstructuraSemanas(), D: generarEstructuraSemanas() }
     },
     '2do Nivel': {
       Mañana: { A: generarEstructuraSemanas(), B: generarEstructuraSemanas() },
-      Tarde: { A: generarEstructuraSemanas(), B: generarEstructuraSemanas() }
+      Tarde: { C: generarEstructuraSemanas(), D: generarEstructuraSemanas() }
     },
     '3er Nivel': {
-      Mañana: { A: generarEstructuraSemanas(), B: generarEstructuraSemanas() },
-      Tarde: { A: generarEstructuraSemanas() }
+      Mañana: { A: generarEstructuraSemanas() },
+      Tarde: { B: generarEstructuraSemanas(), C: generarEstructuraSemanas() }
     }
   });
 
@@ -70,7 +70,7 @@ const Asistencias = () => {
     }));
   };
 
-  // 4. Calcula los totales consolidados de una combinación específica de Nivel, Semana y Día (Suma todas las secciones y turnos)
+  // 4. Calcula los totales consolidados de una combinación específica (Suma turnos y secciones reales existentes)
   const calcularTotalesPorDia = (nivel, semana, dia) => {
     let v = 0;
     let h = 0;
@@ -97,53 +97,62 @@ const Asistencias = () => {
     return total;
   };
 
+  // 6. Guardar cambios enviando sección dinámica a Python Backend
   const guardarCambios = async () => {
-  // 1. Mapeo analítico de salones (temporal hasta automatizarlo con la DB)
-  let salonId = 1; 
-  if (nivelSeleccionado === "Maternal" && turnoSeleccionado === "Mañana") salonId = 1;
-  if (nivelSeleccionado === "Maternal" && turnoSeleccionado === "Tarde") salonId = 2;
-  // Agrega aquí más combinaciones si tus compañeros manejan secciones específicas (A, B, etc.)
+    // ID de salón automatizado temporalmente por nivel y turno
+    let salonId = 1; 
+    if (nivelSeleccionado === "Maternal" && turnoSeleccionado === "Mañana") salonId = 1;
+    if (nivelSeleccionado === "Maternal" && turnoSeleccionado === "Tarde") salonId = 2;
+    // (Puedes expandir tus IDs de salón para el resto de niveles si lo necesitas aquí)
 
-  // 2. Extraer de forma segura los valores de 'v' y 'h' del estado anidado
-  // Necesitamos pasar por: Nivel -> Turno -> Sección -> Semana -> Día
-  // Usamos el operador '?.' para evitar que la app explote si algún campo aún no está lleno
-  const seccionActiva = "A"; // ⚠️ Ajusta esto si tus compañeros guardan la sección en otra variable
-  
-  const registroDia = datosPorNivel[nivelSeleccionado]?.[turnoSeleccionado]?.[seccionActiva]?.[semanaSeleccionada]?.[diaSeleccionado];
+    // Obtenemos las secciones válidas actuales
+    const seccionesDisponibles = Object.keys(datosPorNivel[nivelSeleccionado]?.[turnoSeleccionado] || {});
 
-  // Si existe el registro, tomamos 'v' y 'h', de lo contrario por defecto es 0
-  const cantVarones = registroDia?.v || 0;
-  const cantHembras = registroDia?.h || 0;
+    if (seccionesDisponibles.length === 0) {
+      alert("No hay secciones configuradas para esta selección.");
+      return;
+    }
 
-  // 3. Estructuramos el payload idéntico a lo que espera tu controlador de Python
-  const datosAsistencia = {
-    salon_id: salonId,
-    semana: parseInt(semanaSeleccionada.replace(/\D/g, "")) || 1, // Limpia "Semana 1" -> 1
-    dia_semana: diaSeleccionado,
-    cant_varones: cantVarones,
-    cant_hembras: cantHembras
+    // Si tu Backend de Python procesa una sección por petición, enviamos la primera sección activa 
+    // o puedes mapear un bucle para enviarlas todas. Aquí extraemos los datos de la primera sección visible:
+    const seccionActiva = seccionesDisponibles[0]; 
+    const registroDia = datosPorNivel[nivelSeleccionado]?.[turnoSeleccionado]?.[seccionActiva]?.[semanaSeleccionada]?.[diaSeleccionado];
+
+    const cantVarones = registroDia?.v || 0;
+    const cantHembras = registroDia?.h || 0;
+
+    const datosAsistencia = {
+      salon_id: salonId,
+      semana: parseInt(semanaSeleccionada.replace(/\D/g, "")) || 1, // "Semana 1" -> 1
+      dia_semana: diaSeleccionado,
+      seccion: seccionActiva, // Enviamos explícitamente la sección (A, B, C, D)
+      cant_varones: cantVarones,
+      cant_hembras: cantHembras
+    };
+
+    if (window.pywebview && window.pywebview.api) {
+      try {
+        console.log("Enviando reporte indexado a Python...", datosAsistencia);
+        const respuesta = await window.pywebview.api.guardar_asistencia_global(datosAsistencia);
+
+        if (respuesta.success) {
+          alert(`🎉 ¡Guardado con éxito!\nAsistencias de ${nivelSeleccionado} (${turnoSeleccionado}) — Sección "${seccionActiva}" sincronizadas.`);
+        } else {
+          alert(`❌ Error en Base de Datos: ${respuesta.message}`);
+        }
+      } catch (error) {
+        console.error("Error al comunicar con Python:", error);
+        alert("Error crítico: No se pudo establecer conexión con el backend.");
+      }
+    } else {
+      alert("⚠️ Entorno de escritorio no detectado. Corre el proyecto usando 'python main.py'.");
+    }
   };
 
-  // 4. Puente de comunicación bidireccional con pywebview
-  if (window.pywebview && window.pywebview.api) {
-    try {
-      console.log("Enviando reporte global indexado a Python...", datosAsistencia);
-      
-      const respuesta = await window.pywebview.api.guardar_asistencia_global(datosAsistencia);
-
-      if (respuesta.success) {
-        alert(`🎉 ¡Guardado con éxito!\nAsistencias de ${nivelSeleccionado} (${turnoSeleccionado}) sincronizadas en SQLite.`);
-      } else {
-        alert(`❌ Error en Base de Datos: ${respuesta.message}`);
-      }
-    } catch (error) {
-      console.error("Error al comunicar con Python:", error);
-      alert("Error crítico: No se pudo establecer conexión con el backend.");
-    }
-  } else {
-    alert("⚠️ Entorno de escritorio no detectado. Corre el proyecto usando 'python main.py'.");
-  }
-};
+  // Obtener secciones seguras para prevenir errores si la combinación cambia
+  const seccionesActuales = datosPorNivel[nivelSeleccionado]?.[turnoSeleccionado] 
+    ? Object.keys(datosPorNivel[nivelSeleccionado][turnoSeleccionado]) 
+    : [];
 
   return (
     <div className="p-8 page-transition relative">
@@ -188,7 +197,7 @@ const Asistencias = () => {
                 Ver Cronograma Mensual
               </button>
 
-              <Link to="/" className="bg-white border border-gray-300 text-gray-707 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center">
+              <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center">
                 Inicio
               </Link>
 
@@ -239,7 +248,7 @@ const Asistencias = () => {
             </div>
           </div>
 
-          {/* TABLA DINÁMICA DE ENTRADA */}
+          {/* TABLA DINÁMICA DE ENTRADA (Mapea solo las secciones válidas actuales) */}
           <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="bg-purple-50 p-3 border-b text-xs font-bold text-purple-800 uppercase tracking-wider flex justify-between">
               <span>Nivel: {nivelSeleccionado} ({turnoSeleccionado})</span>
@@ -255,7 +264,7 @@ const Asistencias = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(datosPorNivel[nivelSeleccionado][turnoSeleccionado]).map((seccion) => {
+                {seccionesActuales.map((seccion) => {
                   const registroDia = datosPorNivel[nivelSeleccionado][turnoSeleccionado][seccion][semanaSeleccionada]?.[diaSeleccionado] || { v: 0, h: 0 };
                   const { v, h } = registroDia;
                   
@@ -284,6 +293,14 @@ const Asistencias = () => {
                     </tr>
                   );
                 })}
+
+                {seccionesActuales.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="p-8 text-center text-gray-400 italic text-sm">
+                      No existen secciones registradas en el turno {turnoSeleccionado.toLowerCase()} para este nivel.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -297,7 +314,7 @@ const Asistencias = () => {
             <div className="p-6 border-b bg-blue-600 text-white flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-black">Reporte General de Asistencia Estudiantil</h2>
-                <p className="text-blue-100 text-sm">Cronograma detallado por Semanas y Días (Matrícula Consolidada de Secciones)</p>
+                <p className="text-blue-100 text-sm">Cronograma detallado por Semanas y Días (Matrícula Consolidada de Secciones Reales)</p>
               </div>
               <button onClick={() => setShowResumen(false)} className="text-3xl hover:text-gray-200">&times;</button>
             </div>
