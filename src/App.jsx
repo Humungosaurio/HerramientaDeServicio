@@ -5,6 +5,9 @@ import RegistroAlumnos from "./pages/registroEstudiantes";
 import AsistenciasPersonal from "./pages/asistenciaProfesores"; // Importación actualizada
 import Footer from "./components/footer";
 import AsistenciasDetalladas from "./pages/asistenciasDetalladas";
+import BienesMobiliario from "./pages/mobiliario";
+// Nota: Importa aquí tu componente de Mobiliario cuando lo crees, por ejemplo:
+// import Mobiliario from "./pages/mobiliario";
 
 function App() {
   const backgroundImage = "src/assets/FondoMinimalista.jpg";
@@ -35,10 +38,10 @@ function App() {
                   </p>
                 </header>
 
-                {/* Grid adaptado para albergar las 4 tarjetas de manera uniforme */}
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Grid adaptado para albergar las 5 tarjetas de manera uniforme */}
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                   {/* Módulo: Registro Alumnos */}
-                  <div className="group bg-white/95 p-8 rounded-3xl shadow-2xl border-l-[12px] border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/95 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -66,14 +69,14 @@ function App() {
                     </div>
                     <Link
                       to="/registro-estudiantes"
-                      className="mt-8 inline-block bg-[#075efe] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
+                      className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
                       Abrir Registro Alumnos →
                     </Link>
                   </div>
 
                   {/* Módulo: Asistencias de Estudiantes Detallado */}
-                  <div className="group bg-white/95 p-8 rounded-3xl shadow-2xl border-l-[12px] border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/95 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -101,14 +104,14 @@ function App() {
                     </div>
                     <Link
                       to="/asistenciasDetalladas"
-                      className="mt-8 inline-block bg-[#075efe] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
+                      className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
                       Abrir Detalle Alumnos →
                     </Link>
                   </div>
 
                   {/* Módulo: Asistencias Alumnos */}
-                  <div className="group bg-white/95 p-8 rounded-3xl shadow-2xl border-l-[12px] border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/95 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -136,17 +139,16 @@ function App() {
                     </div>
                     <Link
                       to="/asistencias"
-                      className="mt-8 inline-block bg-[#075efe] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
+                      className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
                       Abrir Módulo Alumnos →
                     </Link>
                   </div>
 
-                  {/* Módulo REFORMADO: Control de Asistencia de Personal */}
-                  <div className="group bg-white/95 p-8 rounded-3xl shadow-2xl border-l-[12px] border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  {/* Módulo: Control de Asistencia de Personal */}
+                  <div className="group bg-white/95 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
-                        {/* Icono de identificación/tarjeta de empleado */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-8 w-8"
@@ -172,11 +174,48 @@ function App() {
                     </div>
                     <Link
                       to="/control-personal"
-                      className="mt-8 inline-block bg-[#075efe] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
+                      className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
                       Abrir Módulo Personal →
                     </Link>
                   </div>
+
+                  {/* NUEVO MÓDULO: Mobiliarios Registrados */}
+                  <div className="group bg-white/95 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                    <div>
+                      <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
+                        {/* Icono de Caja/Inventario */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-8 w-8"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                          />
+                        </svg>
+                      </div>
+                      <h2 className="font-black text-xl text-[#0F172A] mb-4">
+                        Mobiliarios Registrados
+                      </h2>
+                      <p className="text-[#64748B] text-sm leading-relaxed">
+                        Control de inventario de bienes materiales, 
+                        estado de conservación y observaciones de la institución.
+                      </p>
+                    </div>
+                    <Link
+                      to="/mobiliario"
+                      className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
+                    >
+                      Abrir Mobiliario →
+                    </Link>
+                  </div>
+
                 </section>
               </div>
             }
@@ -184,15 +223,9 @@ function App() {
           {/* Rutas de la Aplicación */}
           <Route path="/asistencias" element={<Asistencias />} />
           <Route path="/registro-estudiantes" element={<RegistroAlumnos />} />
-          <Route
-            path="/control-personal"
-            element={<AsistenciasPersonal />}
-          />{" "}
-          {/* Ruta actualizada */}
-          <Route
-            path="/asistenciasDetalladas"
-            element={<AsistenciasDetalladas />}
-          />
+          <Route path="/control-personal" element={<AsistenciasPersonal />} />
+          <Route path="/asistenciasDetalladas" element={<AsistenciasDetalladas />} />
+          <Route path="/mobiliario" element={<BienesMobiliario/>} />
         </Routes>
       </main>
 

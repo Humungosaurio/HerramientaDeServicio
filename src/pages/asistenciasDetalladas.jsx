@@ -138,7 +138,7 @@ const AsistenciasDetalladas = () => {
     : [];
 
   return (
-    <div className="p-8 text-gray-800">
+    <div className="page-transition p-8 text-gray-800">
       <div className="flex flex-col md:flex-row gap-6">
         {/* SIDEBAR ORIGINAL DE SELECCIÓN (NIVELES IZQUIERDA) */}
         <aside className="md:w-1/4 flex md:flex-col overflow-x-auto gap-2">
@@ -160,7 +160,7 @@ const AsistenciasDetalladas = () => {
               <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">
                 Módulo Inicial
               </p>
-              <h1 className="text-3xl font-black text-gray-900">
+              <h1 className="text-3xl font-black text-white">
                 {nivelSeleccionado} — {semanaSeleccionada}
               </h1>
             </div>
@@ -273,7 +273,6 @@ const AsistenciasDetalladas = () => {
                                 ]?.[dia] || false;
                               return (
                                 <td key={dia} className="p-4 text-center">
-                                  {/* CASILLA MARCABLE (CHECKBOX) REEMPLAZADA Y LIMPIA */}
                                   <input
                                     type="checkbox"
                                     checked={asistio}
