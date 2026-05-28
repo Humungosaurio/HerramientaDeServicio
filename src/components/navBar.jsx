@@ -6,7 +6,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="bg-white/95 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shadow-sm relative">
+      <nav className="bg-white/70  border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shadow-sm relative">
         
         {/* Lado Izquierdo: LOGO DEL COLEGIO */}
         <div className="flex items-center z-10">

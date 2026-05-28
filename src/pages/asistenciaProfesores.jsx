@@ -102,30 +102,27 @@ const AsistenciasPersonal = () => {
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1">
-          <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-4">
+          <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-1">
             <div>
               <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">Módulo de Recursos Humanos</p>
               <h1 className="text-3xl font-black text-white">Control de Personal — {semanaSeleccionada}</h1>
             </div>
 
             {/* BOTONES DE ACCIÓN */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-5/6 gap-2">
               <button
                 onClick={() => setShowResumen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Ver Totales Mensuales
+                📊 Ver Totales Mensuales
               </button>
 
               <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center">
-                Inicio
+                🏠 Volver al Inicio
               </Link>
 
               <button onClick={guardarCambios} className="bg-purple-600 hover:bg-purple-800 text-white px-6 py-2 rounded-md font-bold shadow-md">
-                Guardar Reporte
+              💾  Guardar Reporte
               </button>
             </div>
           </header>

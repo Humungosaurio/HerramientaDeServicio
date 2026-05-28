@@ -128,7 +128,7 @@ const BienesMobiliario = () => {
           <button
             onClick={() => setModoEdicion(!modoEdicion)}
             className={`font-bold text-sm px-5 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-2 ${
-              modoEdicion ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
+              modoEdicion ? "bg-red-500 hover:bg-red-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
           >
             {modoEdicion ? "🔒 Bloquear Vista" : "✏️ Editar Existentes"}
@@ -136,7 +136,7 @@ const BienesMobiliario = () => {
 
           <button
             onClick={abrirModalCarga}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+            className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
           >
             <span className="text-base">➕</span> Añadir Artículos
           </button>
@@ -145,7 +145,7 @@ const BienesMobiliario = () => {
             to="/"
             className="bg-white border border-gray-300 text-gray-700 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-gray-50 transition-all shadow-sm"
           >
-            Volver al Inicio
+            🏠Volver al Inicio
           </Link>
 
           <button
@@ -189,9 +189,9 @@ const BienesMobiliario = () => {
 
         <div className="flex items-center gap-3 self-end md:self-center">
           <span className={`inline-flex items-center gap-1.5 text-xs font-black uppercase px-3 py-1.5 rounded-md ${
-            modoEdicion ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"
+            modoEdicion ? "bg-red-100 text-red-500" : "bg-blue-100 text-blue-800"
           }`}>
-            <span className={`h-2 w-2 rounded-full ${modoEdicion ? "bg-amber-500 animate-pulse" : "bg-blue-500"}`}></span>
+            <span className={`h-2 w-2 rounded-full ${modoEdicion ? "bg-red-500 animate-pulse" : "bg-blue-500"}`}></span>
             {modoEdicion ? "Modo Edición Abierto" : "Modo Solo Lectura"}
           </span>
           <div className="text-xs font-bold text-gray-500 uppercase bg-gray-100 px-3 py-1.5 rounded-md whitespace-nowrap">

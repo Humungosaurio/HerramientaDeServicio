@@ -180,14 +180,14 @@ const AsistenciasDetalladas = () => {
                 to="/"
                 className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 transition-all"
               >
-                Inicio
+                🏠 Volver al Inicio
               </Link>
 
               <button
                 onClick={guardarCambiosBD}
                 className="bg-purple-700 hover:bg-purple-800 text-white px-5 py-2 rounded-md font-bold shadow-md transition-all flex items-center gap-2"
               >
-                Guardar Reporte
+              💾 Guardar Reporte
               </button>
             </div>
           </header>

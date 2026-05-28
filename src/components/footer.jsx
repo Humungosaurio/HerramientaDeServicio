@@ -18,7 +18,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="w-full bg-white border-t border-gray-100 py-3 relative mt-auto">
+    <footer className="w-full bg-white/70 border-t border-gray-100 py-3 relative mt-auto">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           
@@ -27,11 +27,11 @@ const Footer = () => {
             <img 
               src="/src/assets/LogoReceptoria.png" 
               alt="Logo" 
-              className="w-7 h-7 object-contain"
+              className="w-9 h-9 object-contain"
             />
             <div className="hidden sm:block">
-              <p className="font-black text-gray-800 text-[11px] leading-none uppercase">C.E.I SIMONCITO</p>
-              <p className="text-[9px] text-gray-400 uppercase font-bold tracking-tighter">San Joaquín, Carabobo</p>
+              <p className="font-black text-gray-800 text-[15px] leading-none uppercase">C.E.I SIMONCITO</p>
+              <p className="text-[9px] text-gray-800 uppercase font-bold tracking-tighter">San Joaquín, Carabobo</p>
             </div>
           </div>
 
@@ -39,7 +39,7 @@ const Footer = () => {
           <div className="relative">
             <button 
               onClick={() => setShowOptions(!showOptions)}
-              className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full border border-red-100 text-[10px] font-bold hover:bg-red-100 transition-all shadow-sm"
+              className="flex items-center gap-2 bg-red/0 text-red-600 px-3 py-1.5 rounded-full border border-black/5 text-[12px] font-bold hover:bg-red-100 transition-all shadow-sm"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -49,14 +49,14 @@ const Footer = () => {
             </button>
 
             {showOptions && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 bg-white border border-gray-200 shadow-xl rounded-xl p-2 z-50">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 w-65 bg-white/90 border border-gray-200 shadow-xl rounded-xl p-2 z-50">
                 <div className="flex flex-col gap-1">
                   {/* WHATSAPP */}
                   <a 
                     href={`https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(contacto.mensajeWS)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-green-200 text-green-600 transition-colors"
                   >
                     <span className="text-base">💬</span>
                     <span className="text-[10px] font-bold uppercase">WhatsApp</span>
@@ -67,7 +67,7 @@ const Footer = () => {
                     href={abrirGmail()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-200 text-red-600 transition-colors"
                   >
                     <span className="text-base">📧</span>
                     <span className="text-[10px] font-bold uppercase">Gmail Web</span>
@@ -80,7 +80,7 @@ const Footer = () => {
           </div>
 
           {/* Copyright */}
-          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+          <div className="text-[13px] text-gray-800 font-bold uppercase tracking-widest">
             © 2026 Receptoría
           </div>
 
