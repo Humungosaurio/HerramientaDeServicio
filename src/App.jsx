@@ -41,7 +41,7 @@ function App() {
                 {/* Grid adaptado para albergar las 5 tarjetas de manera uniforme */}
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                   {/* Módulo: Registro Alumnos */}
-                  <div className="group bg-white/80 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/70 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -71,12 +71,12 @@ function App() {
                       to="/registro-estudiantes"
                       className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
-                      Abrir Registro Alumnos →
+                      Abrir Registro Alumnos 
                     </Link>
                   </div>
 
                   {/* Módulo: Asistencias de Estudiantes Detallado */}
-                  <div className="group bg-white/80 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/70 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -106,12 +106,13 @@ function App() {
                       to="/asistenciasDetalladas"
                       className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
-                      Abrir Detalle Alumnos →
+                      Abrir Detalle Alumnos 
                     </Link>
                   </div>
 
                   {/* Módulo: Asistencias Alumnos */}
-                  <div className="group bg-white/80 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+
+                  <div className="group bg-white/70 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -141,12 +142,12 @@ function App() {
                       to="/asistencias"
                       className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
-                      Abrir Módulo Alumnos →
+                      Abrir Módulo Alumnos 
                     </Link>
                   </div>
 
                   {/* Módulo: Control de Asistencia de Personal */}
-                  <div className="group bg-white/80 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/70 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         <svg
@@ -176,12 +177,12 @@ function App() {
                       to="/control-personal"
                       className="mt-8 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
-                      Abrir Módulo Personal →
+                      Abrir Módulo Personal 
                     </Link>
                   </div>
 
                   {/* NUEVO MÓDULO: Mobiliarios Registrados */}
-                  <div className="group bg-white/80 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
+                  <div className="group bg-white/70 p-6 rounded-3xl shadow-2xl border-l-12px border-[#002366] hover:bg-white transition-all duration-300 hover:scale-[1.03] flex flex-col justify-between">
                     <div>
                       <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] text-[#002366] flex items-center justify-center mb-6 shadow-inner">
                         {/* Icono de Caja/Inventario */}
@@ -210,10 +211,9 @@ function App() {
                     </div>
                     <Link
                       to="/mobiliario"
-                      className="mt-1 inline-block bg-[#075efe] text-white px-4 py-6 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
+                      className="mt-1 inline-block bg-[#075efe] text-white px-4 py-3 rounded-xl font-bold hover:bg-[#003399] transition-all text-center shadow-lg hover:shadow-blue-900/40 active:scale-95 text-sm"
                     >
-                      Abrir Mobiliario            
-                      →
+                      Abrir Mobiliario                                  
                       
                     </Link>
                   </div>

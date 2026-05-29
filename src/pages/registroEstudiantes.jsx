@@ -5,10 +5,13 @@ const RegistroAlumnos = () => {
   const [estudiantes, setEstudiantes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [estudianteActivoId, setEstudianteActivoId] = useState(null);
-  
+
   // Estado para controlar el texto de búsqueda independiente
   const [busquedaAcademica, setBusquedaAcademica] = useState("");
   const [dropdownAbiertoId, setDropdownAbiertoId] = useState(null);
+
+  // NUEVO: Estado para controlar si el modo edición/eliminación está activo
+  const [modoEdicion, setModoEdicion] = useState(false);
 
   const opcionesCondicion = ['Ninguna', 'Autismo (TEA)', 'TDAH', 'Dislexia', 'Otra'];
   const opcionesGenero = ['Masculino', 'Femenino'];
@@ -61,16 +64,29 @@ const RegistroAlumnos = () => {
 
   // NUEVO FILTRADO INTELIGENTE: Divide la búsqueda en palabras sueltas
   const opcionesFiltradas = opcionesAcademicas.filter(opt => {
-    // Si no hay búsqueda, mostrar todo
     if (!busquedaAcademica.trim()) return true;
-
-    // Limpiamos y separamos lo que escribió el usuario por espacios (ej: ["tarde", "1"])
     const palabrasBusqueda = busquedaAcademica.toLowerCase().trim().split(/\s+/);
     const textoOpcion = opt.label.toLowerCase();
-
-    // La opción es válida si contiene TODAS las palabras escritas por el usuario
     return palabrasBusqueda.every(palabra => textoOpcion.includes(palabra));
   });
+
+  // FUNCIÓN: Ordenar la matrícula actual de la A a la Z
+  const ordenarEstudiantesAZ = () => {
+    const estudiantesOrdenados = [...estudiantes].sort((a, b) => {
+      if (!a.nombre.trim()) return 1;
+      if (!b.nombre.trim()) return -1;
+      return a.nombre.localeCompare(b.nombre);
+    });
+    setEstudiantes(estudiantesOrdenados);
+  };
+
+  // NUEVA FUNCIÓN: Eliminar estudiante por ID
+  const eliminarEstudiante = (id) => {
+    const confirmar = window.confirm("¿Está seguro de que desea eliminar a este estudiante de la matrícula actual?");
+    if (confirmar) {
+      setEstudiantes(prev => prev.filter(est => est.id !== id));
+    }
+  };
 
   const agregarFila = () => {
     const nuevoId = Date.now();
@@ -78,7 +94,7 @@ const RegistroAlumnos = () => {
 
     const nuevoEstudiante = {
       id: nuevoId,
-      nombre: '', edad: '', genero: '', direccion: '', 
+      nombre: '', edad: '', genero: '', direccion: '',
       ...defectoAcademico,
       cedulaEscolar: '', fechaNacimiento: '', condicion: 'Ninguna', representanteLegal: '', representativeInstitucional: '',
       repNombre: '', repCi: '', repFechaLugarNac: '', repDireccion: '', repTrabaja: 'No', repDondeTrabaja: '', repEdad: '', repGradoInstruccion: '', repTelefono: '', repCorreo: ''
@@ -149,11 +165,28 @@ const RegistroAlumnos = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {/* NUEVO BOTÓN: Activar/Desactivar Edición General */}
+            <button
+              onClick={() => setModoEdicion(!modoEdicion)}
+              className={`px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95 border ${modoEdicion
+                  ? 'bg-red-500 hover:bg-red-700/80 text-white border-red-700'
+                  : 'bg-slate-700/50 hover:bg-slate-800 text-white border-slate-900'
+                }`}
+            >
+              {modoEdicion ? '🛑 Salir de Edición' : '⚙️ Gestionar Matrícula'}
+            </button>
+
+            <button
+              onClick={ordenarEstudiantesAZ}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95"
+            >
+              🔤 Ordenar A-Z
+            </button>
+
             <button
               onClick={() => setShowModal(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center"
             >
-              
               📊 Ver Listado General
             </button>
 
@@ -162,8 +195,7 @@ const RegistroAlumnos = () => {
             </Link>
 
             <button onClick={guardarDatos} className="bg-purple-600 hover:bg-purple-800 text-white px-6 py-2 rounded-md font-bold shadow-md transition-all active:scale-95">
-            
-            💾 Guardar Datos
+              💾 Guardar Datos
             </button>
           </div>
         </header>
@@ -188,7 +220,7 @@ const RegistroAlumnos = () => {
                 <div className="p-4 text-left">Dirección</div>
                 <div className="p-4 text-left">Asignación Académica (Escribe para filtrar)</div>
                 <div className="p-4 text-left">Representante</div>
-                <div className="p-4">Expediente</div>
+                <div className="p-4">{modoEdicion ? "Acciones" : "Expediente"}</div>
               </div>
 
               <div className="divide-y divide-gray-100">
@@ -213,12 +245,12 @@ const RegistroAlumnos = () => {
                       <div className="px-2">
                         <input type="text" placeholder="Dirección" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.direccion} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
                       </div>
-                      
+
                       {/* BUSCADOR EN TABLA MULTI-PALABRA */}
                       <div className="px-2 relative">
                         <div className="flex items-center justify-between p-2 border border-gray-200 rounded bg-white focus-within:border-purple-400">
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             className="w-full bg-transparent outline-none font-semibold text-gray-700 text-sm"
                             placeholder="Buscar turno o nivel..."
                             value={esDropdownAbierto ? busquedaAcademica : textoAsignacionActual}
@@ -236,7 +268,7 @@ const RegistroAlumnos = () => {
                             <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
                             <div className="absolute left-2 right-2 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
                               {opcionesFiltradas.map(opt => (
-                                <div 
+                                <div
                                   key={opt.id}
                                   onClick={() => seleccionarOpcionAcademica(est.id, opt)}
                                   className="p-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 font-medium cursor-pointer transition-colors"
@@ -255,15 +287,31 @@ const RegistroAlumnos = () => {
                       <div className="px-2">
                         <input type="text" placeholder="Nombre representante" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
                       </div>
+
+                      {/* ACCIÓN INTERACTIVA (VER EXPEDIENTE O ELIMINAR SEGÚN MODOEDICION) */}
+
                       <div className="px-2 flex justify-center">
-                        <button
-                          onClick={() => setEstudianteActivoId(est.id)}
-                          className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
+                        {modoEdicion ? (
+                          <button
+                            onClick={() => eliminarEstudiante(est.id)}
+                            className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 hover:text-red-800 transition-colors border border-red-100 animate-pulse"
+                            title="Eliminar Estudiante"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setEstudianteActivoId(est.id)}
+                            className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100"
+                            title="Ver Expediente"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -331,8 +379,8 @@ const RegistroAlumnos = () => {
                   <div className="md:col-span-2 relative">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Asignación Académica Asignada</label>
                     <div className="flex items-center justify-between p-2 border rounded bg-white focus-within:border-blue-500">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         className="w-full bg-transparent outline-none font-medium text-sm text-gray-700"
                         placeholder="Buscar turno o nivel..."
                         value={dropdownAbiertoId === 'modal' ? busquedaAcademica : `${estudianteActivo.turno} - ${estudianteActivo.nivelEstudio} - Sección "${estudianteActivo.seccion}"`}
@@ -350,7 +398,7 @@ const RegistroAlumnos = () => {
                         <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
                         <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
                           {opcionesFiltradas.map(opt => (
-                            <div 
+                            <div
                               key={opt.id}
                               onClick={() => seleccionarOpcionAcademica(estudianteActivo.id, opt)}
                               className="p-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-medium cursor-pointer transition-colors"
@@ -512,19 +560,20 @@ const RegistroAlumnos = () => {
                 ))}
 
                 {estudiantes.filter(e => e.nombre.trim() !== "").length === 0 && (
-                  <p className="col-span-2 text-center text-gray-400 py-10 font-medium">No hay estudiantes con nombres asignados in la lista.</p>
+                  <p className="col-span-2 text-center text-gray-400 py-10 font-medium">No hay estudiantes con nombres asignados en la lista.</p>
                 )}
               </div>
             </div>
 
             <div className="p-4 border-t bg-gray-50 flex justify-end">
-              <button onClick={() => setShowModal(false)} className="bg-gray-800 hover:bg-black text-white px-6 py-2 rounded-lg font-bold transition-colors">
-                Cerrar Vista
+              <button onClick={() => setShowModal(false)} className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-md">
+                Cerrar Listado
               </button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

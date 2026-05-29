@@ -5,8 +5,13 @@ const AsistenciasPersonal = () => {
   // 1. Estados de control de la interfaz
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('Mañana');
   const [semanaSeleccionada, setSemanaSeleccionada] = useState('Semana 1');
-  const [showResumen, setShowResumen] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState('');
+
+  // Estado para controlar si el modo de edición/eliminación está activo
+  const [modoEdicion, setModoEdicion] = useState(false);
+
+  // NUEVO: Estado para activar/desactivar el orden alfabético
+  const [ordenAlfabetico, setOrdenAlfabetico] = useState(false);
 
   // Estructura limpia: Cada turno tiene su lista de colaboradores/personal.
   const [datosPersonal, setDatosPersonal] = useState({
@@ -63,6 +68,17 @@ const AsistenciasPersonal = () => {
     setNuevoNombre('');
   };
 
+  // Eliminar colaborador del turno activo por ID
+  const eliminarColaborador = (id, nombre) => {
+    const confirmar = window.confirm(`¿Está seguro de que desea eliminar a ${nombre} del turno de la ${turnoSeleccionado}?`);
+    if (confirmar) {
+      setDatosPersonal(prev => ({
+        ...prev,
+        [turnoSeleccionado]: prev[turnoSeleccionado].filter(empleado => empleado.id !== id)
+      }));
+    }
+  };
+
   // Cuenta cuántos días asistió un empleado en la semana actual seleccionada
   const contarDiasAsistidos = (empleado, semana) => {
     const semanaDias = empleado.asistencias[semana] || {};
@@ -73,12 +89,20 @@ const AsistenciasPersonal = () => {
     alert(`Asistencias de la ${semanaSeleccionada} (${turnoSeleccionado}) sincronizadas correctamente.`);
   };
 
+  // LÓGICA DE ORDENAMIENTO: Se ordena alfabéticamente si "ordenAlfabetico" es true, sino se mantiene por ID de registro
+  const personalProcesado = [...datosPersonal[turnoSeleccionado]].sort((a, b) => {
+    if (ordenAlfabetico) {
+      return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+    }
+    return a.id - b.id; // Orden por defecto (Fecha de creación)
+  });
+
   return (
     <div className="p-8 page-transition relative">
       <div className="flex flex-col md:flex-row gap-6">
 
         {/* SIDEBAR / PANEL DE AGREGAR */}
-        <aside className="md:w-1/4 bg-white p-6 rounded-xl border border-gray-100 shadow-md h-fit">
+        <aside className="md:w-1/4 bg-white/90 p-10 rounded-xl border border-gray-900 shadow-md h-fit">
           <h2 className="text-lg font-black text-gray-800 mb-4">Registrar Personal</h2>
           <form onSubmit={agregarPersonal} className="flex flex-col gap-3">
             <div>
@@ -102,27 +126,43 @@ const AsistenciasPersonal = () => {
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1">
-          <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-1">
+          <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-4">
             <div>
               <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">Módulo de Recursos Humanos</p>
               <h1 className="text-3xl font-black text-white">Control de Personal — {semanaSeleccionada}</h1>
             </div>
 
             {/* BOTONES DE ACCIÓN */}
-            <div className="flex flex-5/6 gap-2">
+            <div className="flex flex-wrap gap-2 lg:justify-end">
               <button
-                onClick={() => setShowResumen(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center"
+                onClick={() => setModoEdicion(!modoEdicion)}
+                className={`px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95 border ${
+                  modoEdicion 
+                    ? 'bg-red-600 hover:bg-red-800 text-white border-red-700' 
+                    : 'bg-slate-600/50 hover:bg-slate-800 text-white border-slate-900'
+                }`}
               >
-                📊 Ver Totales Mensuales
+                {modoEdicion ? '🛑 Salir de Edición' : '⚙️ Gestionar Personal'}
               </button>
 
-              <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center">
+              {/* NUEVO BOTÓN: Ubicado exactamente al lado de Gestionar Personal */}
+              <button
+                onClick={() => setOrdenAlfabetico(!ordenAlfabetico)}
+                className={`px-2 py-1 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95 border ${
+                  ordenAlfabetico 
+                    ? 'bg-purple-600 text-white border-gray-900 hover:bg-purple-800' 
+                    : 'bg-blue-600 text-white border-gray-900 hover:bg-blue-800'
+                }`}
+              >
+                {ordenAlfabetico ? '🔤 Ordenado: A-Z' : '📋 Orden: Por Registro'}
+              </button>
+
+              <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center shadow-sm">
                 🏠 Volver al Inicio
               </Link>
 
-              <button onClick={guardarCambios} className="bg-purple-600 hover:bg-purple-800 text-white px-6 py-2 rounded-md font-bold shadow-md">
-              💾  Guardar Reporte
+              <button onClick={guardarCambios} className="bg-purple-600 hover:bg-purple-800 text-white px-6 py-2 rounded-md font-bold shadow-md transition-all active:scale-95">
+                💾 Guardar Reporte
               </button>
             </div>
           </header>
@@ -172,17 +212,18 @@ const AsistenciasPersonal = () => {
                     <th key={dia} className="p-4 text-center bg-purple-50/50 text-purple-900 font-black">{dia}</th>
                   ))}
                   <th className="p-4 text-center bg-purple-50 text-purple-700">Días Laborados</th>
+                  {modoEdicion && <th className="p-4 text-center bg-red-50 text-red-700 font-black">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
-                {datosPersonal[turnoSeleccionado].length === 0 ? (
+                {personalProcesado.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="p-8 text-center text-gray-400 italic">
+                    <td colSpan={modoEdicion ? "8" : "7"} className="p-8 text-center text-gray-400 italic">
                       No hay personal registrado en este turno.
                     </td>
                   </tr>
                 ) : (
-                  datosPersonal[turnoSeleccionado].map((empleado) => (
+                  personalProcesado.map((empleado) => (
                     <tr key={empleado.id} className="border-t hover:bg-gray-50 transition-colors">
                       <td className="p-4 font-bold text-gray-700 text-left">{empleado.nombre}</td>
 
@@ -198,9 +239,10 @@ const AsistenciasPersonal = () => {
                                   checked={asistioEseDia}
                                   onChange={() => handleDiaChange(empleado.id, dia)}
                                   className="sr-only peer"
+                                  disabled={modoEdicion}
                                 />
                                 {/* El Switch Deslizante */}
-                                <div className="w-10 h-6 flex items-center bg-gray-200 rounded-full p-0.5 duration-300 ease-in-out peer-checked:bg-green-500 after:bg-white after:w-5 after:h-5 after:rounded-full after:shadow-md after:duration-300 peer-checked:after:translate-x-4"></div>
+                                <div className={`w-10 h-6 flex items-center bg-gray-200 rounded-full p-0.5 duration-300 ease-in-out peer-checked:bg-green-500 after:bg-white after:w-5 after:h-5 after:rounded-full after:shadow-md after:duration-300 peer-checked:after:translate-x-4 ${modoEdicion ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
                               </label>
                             </div>
                           </td>
@@ -211,6 +253,21 @@ const AsistenciasPersonal = () => {
                       <td className="p-4 bg-purple-50/50 font-black text-purple-700 text-center text-lg">
                         {contarDiasAsistidos(empleado, semanaSeleccionada)} / 5
                       </td>
+
+                      {/* Botón de eliminación en Modo Edición */}
+                      {modoEdicion && (
+                        <td className="p-4 text-center bg-red-50/30">
+                          <button
+                            onClick={() => eliminarColaborador(empleado.id, empleado.nombre)}
+                            className="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200 hover:text-red-800 transition-colors border border-red-200 shadow-sm active:scale-95"
+                            title="Eliminar del personal"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -219,110 +276,6 @@ const AsistenciasPersonal = () => {
           </div>
         </main>
       </div>
-
-      {/* MODAL DE RESUMEN GENERAL */}
-      {showResumen && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden">
-            <div className="p-6 border-b bg-blue-600 text-white flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black">Resumen Mensual de Asistencias</h2>
-                <p className="text-blue-100 text-sm">Desglose del estado del personal durante las 4 semanas</p>
-              </div>
-              <button onClick={() => setShowResumen(false)} className="text-3xl hover:text-gray-200">&times;</button>
-            </div>
-
-            <div className="p-6 max-h-[70vh] overflow-y-auto bg-gray-100">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* Columna Turno Mañana */}
-                <div className="bg-white border rounded-xl p-5 shadow-sm">
-                  <h3 className="text-lg font-black text-gray-800 border-b pb-2 mb-4 flex justify-between">
-                    <span>Turno Mañana ☀️</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md">Total: {datosPersonal.Mañana.length} Empleados</span>
-                  </h3>
-                  {datosPersonal.Mañana.length === 0 ? (
-                    <p className="text-sm text-gray-400 italic py-2">Sin registros de personal.</p>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {datosPersonal.Mañana.map(p => (
-                        <div key={p.id} className="bg-gray-50 p-4 rounded-xl border">
-                          <p className="font-bold text-purple-700 text-base mb-2">{p.nombre}</p>
-                          <div className="grid grid-cols-1 gap-2">
-                            {semanas.map(sem => (
-                              <div key={sem} className="flex flex-col sm:flex-row sm:items-center justify-between text-xs border-b border-dashed pb-1 last:border-0">
-                                <span className="font-bold text-gray-500 w-20">{sem}:</span>
-                                <div className="flex gap-1 mt-1 sm:mt-0">
-                                  {diasSemana.map(dia => (
-                                    <span
-                                      key={dia}
-                                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${p.asistencias[sem]?.[dia] ? 'bg-green-100 text-green-700 font-black' : 'bg-red-100 text-red-400 line-through'
-                                        }`}
-                                    >
-                                      {dia.substring(0, 3)}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Columna Turno Tarde */}
-                <div className="bg-white border rounded-xl p-5 shadow-sm">
-                  <h3 className="text-lg font-black text-gray-800 border-b pb-2 mb-4 flex justify-between">
-                    <span>Turno Tarde 🌙</span>
-                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-md">Total: {datosPersonal.Tarde.length} Empleados</span>
-                  </h3>
-                  {datosPersonal.Tarde.length === 0 ? (
-                    <p className="text-sm text-gray-400 italic py-2">Sin registros de personal.</p>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {datosPersonal.Tarde.map(p => (
-                        <div key={p.id} className="bg-gray-50 p-4 rounded-xl border">
-                          <p className="font-bold text-purple-700 text-base mb-2">{p.nombre}</p>
-                          <div className="grid grid-cols-1 gap-2">
-                            {semanas.map(sem => (
-                              <div key={sem} className="flex flex-col sm:flex-row sm:items-center justify-between text-xs border-b border-dashed pb-1 last:border-0">
-                                <span className="font-bold text-gray-500 w-20">{sem}:</span>
-                                <div className="flex gap-1 mt-1 sm:mt-0">
-                                  {diasSemana.map(dia => (
-                                    <span
-                                      key={dia}
-                                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${p.asistencias[sem]?.[dia] ? 'bg-green-100 text-green-700 font-black' : 'bg-red-100 text-red-400 line-through'
-                                        }`}
-                                    >
-                                      {dia.substring(0, 3)}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 flex justify-end border-t">
-              <button
-                onClick={() => setShowResumen(false)}
-                className="bg-gray-800 text-white px-8 py-2 rounded-lg font-bold hover:bg-black transition-all"
-              >
-                Cerrar Reporte
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

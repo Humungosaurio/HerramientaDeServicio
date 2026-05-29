@@ -159,7 +159,7 @@ const Asistencias = () => {
       <div className="flex flex-col md:flex-row gap-6">
         
         {/* SIDEBAR DE NIVELES */}
-        <aside className="md:w-1/4 flex md:flex-col overflow-x-auto gap-2">
+        <aside className="md:w-1/5  flex md:flex-col overflow-x-auto gap-2">
           {niveles.map((nivel) => (
             <button
               key={nivel}
