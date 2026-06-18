@@ -20,7 +20,6 @@ class AttendanceController:
             
         cursor = conn.cursor()
         try:
-            # Usamos INSERT OR REPLACE para aprovechar la restricción UNIQUE(salon_id, semana, dia_semana).
             # Si el registro ya existe para ese día/salón, simplemente actualiza los conteos.
             query = """
                 INSERT OR REPLACE INTO asistencia_global 

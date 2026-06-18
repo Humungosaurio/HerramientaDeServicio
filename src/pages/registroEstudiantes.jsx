@@ -88,16 +88,37 @@ const RegistroAlumnos = () => {
     }
   };
 
-  const agregarFila = () => {
+    const agregarFila = () => {
     const nuevoId = Date.now();
     const defectoAcademico = opcionesAcademicas[0].valores;
 
     const nuevoEstudiante = {
       id: nuevoId,
-      nombre: '', edad: '', genero: '', direccion: '',
+      // Datos básicos
+      nombre: '',
+      edad: '',
+      genero: '',
+      direccion: '',
+      cedulaEscolar: '',
+      fechaNacimiento: '',
+      condicion: 'Ninguna',
+      // Asignación académica
       ...defectoAcademico,
-      cedulaEscolar: '', fechaNacimiento: '', condicion: 'Ninguna', representanteLegal: '', representativeInstitucional: '',
-      repNombre: '', repCi: '', repFechaLugarNac: '', repDireccion: '', repTrabaja: 'No', repDondeTrabaja: '', repEdad: '', repGradoInstruccion: '', repTelefono: '', repCorreo: ''
+      // Representantes
+      representanteLegal: '',
+      representanteInstitucional: '',
+      re_inst_ci: '',           // <--- AÑADIDO
+      // Datos del representante legal
+      repNombre: '',
+      repCi: '',
+      repFechaLugarNac: '',
+      repDireccion: '',
+      repTrabaja: 'No',
+      repDondeTrabaja: '',
+      repEdad: '',
+      repGradoInstruccion: '',
+      repTelefono: '',
+      repCorreo: '',
     };
 
     setEstudiantes([...estudiantes, nuevoEstudiante]);
@@ -148,8 +169,47 @@ const RegistroAlumnos = () => {
     setEstudianteActivoId(id);
   };
 
-  const guardarDatos = () => {
-    alert("Datos de los estudiantes sincronizados correctamente.");
+  // FUNCIÓN GUARDAR DATOS ADAPTADA A PYWEBVIEW
+  const guardarDatos = async () => {
+    // Filtrar para no enviar filas completamente vacías. Exigimos al menos Nombre y Cédula Escolar.
+    const estudiantesValidos = estudiantes.filter(est => est.nombre.trim() !== '' && est.cedulaEscolar.trim() !== '');
+
+    if (estudiantesValidos.length === 0) {
+      alert("⚠️ No hay estudiantes válidos para guardar. Asegúrese de llenar al menos el Nombre y la Cédula Escolar.");
+      return;
+    }
+
+    try {
+      let exitoCount = 0;
+      let errores = [];
+
+      // Validamos si estamos dentro del entorno de pywebview
+      if (window.pywebview && window.pywebview.api) {
+        for (const estudiante of estudiantesValidos) {
+          // Llamada al backend de Python
+          const respuesta = await window.pywebview.api.registrar_estudiante_completo(estudiante);
+
+          if (respuesta.status === 'success') {
+            exitoCount++;
+          } else {
+            errores.push(`- ${estudiante.nombre}: ${respuesta.message}`);
+          }
+        }
+
+        // Mensajes de retroalimentación
+        if (errores.length === 0) {
+          alert(`✅ ¡Éxito! Se sincronizaron ${exitoCount} estudiante(s) correctamente en la Base de Datos.`);
+        } else {
+          alert(`⚠️ Se guardaron ${exitoCount} estudiantes, pero hubo errores:\n\n${errores.join('\n')}`);
+        }
+      } else {
+        // Fallback por si estás probando la interfaz en un navegador web normal fuera de tu app en Python
+        console.warn("API de pywebview no detectada. Datos que se enviarían a SQLite:", estudiantesValidos);
+        alert("🖥️ Estás en el navegador. Para que guarde en SQLite, debes ejecutar la aplicación desde el script de Python.");
+      }
+    } catch (error) {
+      alert(`❌ Ocurrió un error crítico de conexión con el controlador:\n${error.message}`);
+    }
   };
 
   const estudianteActivo = estudiantes.find(est => est.id === estudianteActivoId);
@@ -288,8 +348,7 @@ const RegistroAlumnos = () => {
                         <input type="text" placeholder="Nombre representante" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
                       </div>
 
-                      {/* ACCIÓN INTERACTIVA (VER EXPEDIENTE O ELIMINAR SEGÚN MODOEDICION) */}
-
+                      {/* ACCIÓN INTERACTIVA */}
                       <div className="px-2 flex justify-center">
                         {modoEdicion ? (
                           <button
@@ -424,10 +483,17 @@ const RegistroAlumnos = () => {
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
                     <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
                   </div>
-                  <div className="md:col-span-2">
+                  
+                  {/* SE DIVIDIÓ LA COLUMNA PARA INCLUIR LA CÉDULA DEL REPRESENTANTE INSTITUCIONAL */}
+                  <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Institucional</label>
-                    <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteInstitucional} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteInstitucional', e.target.value)} />
+                    <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteInstitucional} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteInstitucional', e.target.value)} placeholder="Nombre del Institucional" />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">C.I. Rep. Institucional</label>
+                    <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_ci} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_ci', e.target.value)} placeholder="Ej. 12345678" />
+                  </div>
+
                   <div className="md:col-span-3">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
                     <textarea className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" rows="2" value={estudianteActivo.direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'direccion', e.target.value)}></textarea>
@@ -506,7 +572,7 @@ const RegistroAlumnos = () => {
 
             <div className="p-4 border-t bg-gray-50 flex justify-end">
               <button onClick={cerrarExpediente} className="bg-[#002366] hover:bg-blue-900 text-white px-8 py-2 rounded-lg font-bold transition-colors shadow-md">
-                Guardar y Cerrar
+                Guardar Localmente y Cerrar
               </button>
             </div>
           </div>
