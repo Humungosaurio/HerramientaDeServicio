@@ -1,28 +1,36 @@
+import os
 import webview
-# 🔄 Corregido: Importamos 'AttendanceController' desde tu archivo 'attendance_cntrl'
-from controllers.attendance_cntrl import AttendanceController
+from controllers.register_cntrl import AcademicController
+
+class SistemaAPI:
+    def __init__(self):
+        #Detecta la ubicación de main.py (Carpeta BackEnd/)
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        #CORRECCIÓN: Entramos a 'data' y usamos el nombre exacto en minúsculas
+        self.db_path = os.path.join(base_dir,"database", "data", "Control_Estudiantil.db")
+        
+        self.controlador_academico = AcademicController(self.db_path)
+
+    def registrar_estudiante_completo(self, data):
+        return self.controlador_academico.registrar_estudiante_completo(data)
+
 
 def iniciar_aplicacion():
-    """
-    Inicializa el entorno de escritorio de pywebview, configura la ventana
-    e inyecta la API local para la comunicación bidireccional con React.
-    """
-    # 🛠️ Instanciamos la clase con el nombre correcto
-    api_asistencia = AttendanceController()
+    api_global = SistemaAPI()
     
-    # Creamos la interfaz gráfica de escritorio
     window = webview.create_window(
-        title="Registro Administrativo",
-        url="http://localhost:5173",  # URL de tu servidor de desarrollo de Vite / React
-        js_api=api_asistencia,         # Expone las funciones de asistencia en window.pywebview.api
+        title="Registro Administrativo - Simoncito",
+        url="http://localhost:5173",
+        js_api=api_global,
         width=1200,
         height=700,
         resizable=True,
-        min_size=(1024, 600)          # Evita que deformen la interfaz rompiendo el diseño de Tailwind
+        min_size=(1024, 600)
     )
     
-    # Arrancamos el ciclo de vida de la aplicación
     webview.start(debug=True)
+
 
 if __name__ == "__main__":
     iniciar_aplicacion()
