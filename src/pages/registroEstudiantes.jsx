@@ -96,7 +96,6 @@ const RegistroAlumnos = () => {
       id: nuevoId,
       // Datos básicos
       nombre: '',
-      edad: '',
       genero: '',
       direccion: '',
       cedulaEscolar: '',
@@ -115,7 +114,6 @@ const RegistroAlumnos = () => {
       repDireccion: '',
       repTrabaja: 'No',
       repDondeTrabaja: '',
-      repEdad: '',
       repGradoInstruccion: '',
       repTelefono: '',
       repCorreo: '',
@@ -423,10 +421,6 @@ const RegistroAlumnos = () => {
                     <input type="date" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.fechaNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 'fechaNacimiento', e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Edad del Alumno</label>
-                    <input type="number" min="0" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.edad} onChange={(e) => handleInputChange(estudianteActivo.id, 'edad', e.target.value)} placeholder="0" />
-                  </div>
-                  <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Género</label>
                     <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.genero} onChange={(e) => handleInputChange(estudianteActivo.id, 'genero', e.target.value)}>
                       <option value="">Seleccione...</option>
@@ -507,9 +501,9 @@ const RegistroAlumnos = () => {
                   <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-2">2</span> Datos del Representante
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-3">
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Nombre del Representante</label>
-                    <input type="text" className="w-full p-2 border rounded focus:border-purple-500 outline-none text-sm text-gray-800" value={estudianteActivo.repNombre} onChange={(e) => handleInputChange(estudianteActivo.id, 'repNombre', e.target.value)} />
+                <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
+                    <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Cédula de Identidad</label>
@@ -527,10 +521,7 @@ const RegistroAlumnos = () => {
                     <label className="block text-xs font-bold text-gray-600 mb-1">Correo Electrónico</label>
                     <input type="email" className="w-full p-2 border rounded focus:border-purple-500 outline-none text-sm text-gray-800" value={estudianteActivo.repCorreo} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCorreo', e.target.value)} />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Edad</label>
-                    <input type="number" min="18" className="w-full p-2 border rounded focus:border-purple-500 outline-none text-sm text-gray-800" value={estudianteActivo.repEdad} onChange={(e) => handleInputChange(estudianteActivo.id, 'repEdad', e.target.value)} />
-                  </div>
+
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Grado de Instrucción</label>
                     <select className="w-full p-2 border rounded focus:border-purple-500 outline-none text-sm text-gray-700" value={estudianteActivo.repGradoInstruccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'repGradoInstruccion', e.target.value)}>

@@ -1,3 +1,0 @@
-un Ordenar por la letras de A a Z en cada modulo de registro(estudiantes y personal) igual que en el modulo de mobiliaria
-opcion de eliminar en cada modulo(Pon el boton de editar como en el modulo de mobiliaria)
-AVANCESSa
