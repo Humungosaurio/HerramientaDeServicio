@@ -2,10 +2,29 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const AsistenciasDetalladas = () => {
+  // Matriz de meses en español para la asignación automática
+  const mesesAnio = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  // Obtiene el mes actual del sistema
+  const mesActualSistema = mesesAnio[new Date().getMonth()];
+
+  // Formatea la fecha actual completa (Ej: "Jueves, 2 de julio de 2026")
+  const fechaHoyFormateada = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   const [nivelSeleccionado, setNivelSeleccionado] = useState("Maternal");
   const [turnoSeleccionado, setTurnoSeleccionado] = useState("Mañana");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("Semana 1");
-  const [mesSeleccionado, setMesSeleccionado] = useState("Junio"); // Añadido
+  
+  // Cambiado de "Junio" fijo a la lectura directa del mes actual del sistema
+  const [mesSeleccionado, setMesSeleccionado] = useState(mesActualSistema);
   
   // Datos reales desde la BD
   const [alumnos, setAlumnos] = useState([]);
@@ -66,21 +85,33 @@ const AsistenciasDetalladas = () => {
         <main className="flex-1">
           <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-4">
             <div>
-              <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">Pase de Lista Detallado</p>
+              {/* Se añade la referencia del mes actual detectado y el banner de fecha */}
+              <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">
+                Pase de Lista Detallado — Mes Actual: {mesSeleccionado}
+              </p>
               <h1 className="text-3xl font-black text-white">{nivelSeleccionado} — {semanaSeleccionada}</h1>
+              <p className="text-xs text-gray-400 mt-1 font-medium italic">
+                📅 Fecha de registro: <span className="capitalize text-purple-300">{fechaHoyFormateada}</span>
+              </p>
             </div>
             <div className="flex gap-2">
-              <Link to="/" className="bg-white px-4 py-2 rounded-md font-bold text-gray-700">🏠 Inicio</Link>
-              <button onClick={guardarCambiosBD} className="bg-purple-700 text-white px-5 py-2 rounded-md font-bold">💾 Guardar Reporte</button>
+              <Link to="/" className="bg-white px-4 py-2 rounded-md font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">🏠 Inicio</Link>
+              <button onClick={guardarCambiosBD} className="bg-purple-700 text-white px-5 py-2 rounded-md font-bold shadow-md hover:bg-purple-800 transition-colors">💾 Guardar Reporte</button>
             </div>
           </header>
 
-          <div className="flex gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
-             <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                {turnos.map(t => <button key={t} onClick={() => setTurnoSeleccionado(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
+          <div className="flex gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 justify-between items-center">
+             <div className="flex gap-4">
+               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+                  {turnos.map(t => <button key={t} onClick={() => setTurnoSeleccionado(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
+               </div>
+               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+                  {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white" : "text-gray-600"}`}>{s}</button>)}
+               </div>
              </div>
-             <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white" : "text-gray-600"}`}>{s}</button>)}
+             {/* Distintivo estético para recordar bajo qué mes se guardará en la base de datos */}
+             <div className="text-xs font-bold text-gray-500 uppercase bg-gray-200 px-3 py-2 rounded-lg">
+               Guardando en: <span className="text-purple-700 font-black">{mesSeleccionado}</span>
              </div>
           </div>
 

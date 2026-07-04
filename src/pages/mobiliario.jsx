@@ -7,12 +7,13 @@ const BienesMobiliario = () => {
   const [criterioOrden, setCriterioOrden] = useState("nombre-asc");
   const [modoEdicion, setModoEdicion] = useState(false);
 
+  // Inventario inicial con la propiedad 'enUso' integrada
   const [inventario, setInventario] = useState([
-    { id: 1, nombre: "Mesas para niños (Preescolar)", cantidad: 12, observaciones: "3 requieren pintura en las patas traseras y nivelación del tablero principal antes del inicio de clases." },
-    { id: 2, nombre: "Sillas de plástico infantiles", cantidad: 24, observaciones: "Todas operativas. Almacenadas en el depósito B." },
-    { id: 3, nombre: "Pizarrones acrílicos", cantidad: 4, observaciones: "1 desgastado con manchas fantasmas difíciles de borrar, requiere cambio de lámina." },
-    { id: 4, nombre: "Escritorio ejecutivo (Dirección)", cantidad: 2, observaciones: "Excelente estado." },
-    { id: 5, nombre: "Reverbero industrial 2 hornillas", cantidad: 1, observaciones: "Mantenimiento al día realizado por el servicio técnico autorizado el mes pasado." },
+    { id: 1, nombre: "Mesas para niños (Preescolar)", cantidad: 12, enUso: true, observaciones: "3 requieren pintura en las patas traseras y nivelación del tablero principal antes del inicio de clases." },
+    { id: 2, nombre: "Sillas de plástico infantiles", cantidad: 24, enUso: true, observaciones: "Todas operativas. Almacenadas en el depósito B." },
+    { id: 3, nombre: "Pizarrones acrílicos", cantidad: 4, enUso: false, observaciones: "1 desgastado con manchas fantasmas difíciles de borrar, requiere cambio de lámina." },
+    { id: 4, nombre: "Escritorio ejecutivo (Dirección)", cantidad: 2, enUso: true, observaciones: "Excelente estado." },
+    { id: 5, nombre: "Reverbero industrial 2 hornillas", cantidad: 1, enUso: true, observaciones: "Mantenimiento al día realizado por el servicio técnico autorizado el mes pasado." },
   ]);
 
   // 2. Estados para el Modal de Borrado Seguro
@@ -25,14 +26,14 @@ const BienesMobiliario = () => {
 
   // --- Funciones del Modal de Carga Masiva ---
   const abrirModalCarga = () => {
-    setNuevosArticulos([{ id: Date.now(), nombre: "", cantidad: 1, observaciones: "" }]);
+    setNuevosArticulos([{ id: Date.now(), nombre: "", cantidad: 1, enUso: true, observaciones: "" }]);
     setModalCargaAbierto(true);
   };
 
   const agregarFilaEnCarga = () => {
     setNuevosArticulos([
       ...nuevosArticulos,
-      { id: Date.now() + Math.random(), nombre: "", cantidad: 1, observaciones: "" }
+      { id: Date.now() + Math.random(), nombre: "", cantidad: 1, enUso: true, observaciones: "" }
     ]);
   };
 
@@ -57,7 +58,22 @@ const BienesMobiliario = () => {
       alert("⚠️ Por favor, ingresa al menos un artículo con nombre válido.");
       return;
     }
-    setInventario([...inventario, ...filasValidas]);
+
+    // Lógica de asignación de ID único e incremental automático
+    let ultimoId = inventario.length > 0 ? Math.max(...inventario.map(item => item.id)) : 0;
+    
+    const filasProcesadasConId = filasValidas.map((item) => {
+      ultimoId += 1;
+      return {
+        id: ultimoId,
+        nombre: item.nombre,
+        cantidad: item.cantidad,
+        enUso: item.enUso,
+        observaciones: item.observaciones
+      };
+    });
+
+    setInventario([...inventario, ...filasProcesadasConId]);
     setModalCargaAbierto(false);
     setNuevosArticulos([]);
   };
@@ -92,6 +108,7 @@ const BienesMobiliario = () => {
     setModoEdicion(false);
   };
 
+  // NUEVO: Lógica de ordenamiento expandida para incluir ID
   const obtenerItemsProcesados = () => {
     const filtrados = inventario.filter((item) =>
       item.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -103,6 +120,8 @@ const BienesMobiliario = () => {
         case "nombre-desc": return b.nombre.localeCompare(a.nombre);
         case "cantidad-asc": return a.cantidad - b.cantidad;
         case "cantidad-desc": return b.cantidad - a.cantidad;
+        case "id-asc": return a.id - b.id;       // Ordenar por ID Menor a Mayor
+        case "id-desc": return b.id - a.id;      // Ordenar por ID Mayor a Menor
         default: return 0;
       }
     });
@@ -171,6 +190,7 @@ const BienesMobiliario = () => {
             />
           </div>
 
+          {/* MENÚ DE ORDENAMIENTO EXTENDIDO */}
           <div className="relative min-w-[220px]">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm pointer-events-none">Ordenar por</span>
             <select
@@ -182,6 +202,8 @@ const BienesMobiliario = () => {
               <option value="nombre-desc">Nombre ("Z" → "A")</option>
               <option value="cantidad-asc">Menor cantidad</option>
               <option value="cantidad-desc">Mayor cantidad</option>
+              <option value="id-asc">ID (Menor a Mayor)</option>
+              <option value="id-desc">ID (Mayor a Menor)</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">▼</div>
           </div>
@@ -206,17 +228,19 @@ const BienesMobiliario = () => {
           <table className="w-full min-w-[950px] table-fixed border-collapse">
             <thead>
               <tr className="bg-gradient-to-r from-gray-50 to-gray-100/80 border-b border-gray-200 text-gray-600 text-xs uppercase tracking-wider font-bold">
-                <th className="p-4 text-left w-4/12">Nombre del Bien / Ubicación</th>
-                <th className="p-4 text-center w-2/12">Cantidad</th>
-                <th className="p-4 text-left w-5/12">Observaciones Generales</th>
-                <th className="p-4 text-center w-1/12">Acción</th>
+                <th className="p-4 text-center w-[7%]">ID</th>
+                <th className="p-4 text-left w-33/100">Nombre del Bien / Ubicación</th>
+                <th className="p-4 text-center w-[10%]">Cantidad</th>
+                <th className="p-4 text-center w-[15%]">Estado Uso</th>
+                <th className="p-4 text-left w-30/100">Observaciones Generales</th>
+                <th className="p-4 text-center w-[5%]">Acción</th>
               </tr>
             </thead>
             
             <tbody className="divide-y divide-gray-100 vertical-align-top">
               {itemsProcesados.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-16 text-center text-gray-400 font-medium italic">
+                  <td colSpan="6" className="p-16 text-center text-gray-400 font-medium italic">
                     No se encontraron activos en el inventario.
                   </td>
                 </tr>
@@ -224,6 +248,11 @@ const BienesMobiliario = () => {
                 itemsProcesados.map((item) => (
                   <tr key={item.id} className="transition-colors hover:bg-gray-50/50 items-start">
                     
+                    {/* ID DE VISUALIZACIÓN */}
+                    <td className="p-4 text-center align-top font-bold text-gray-400 text-sm pt-5">
+                      #{item.id}
+                    </td>
+
                     {/* NOMBRE */}
                     <td className="p-4 align-top">
                       <input
@@ -254,8 +283,30 @@ const BienesMobiliario = () => {
                         }`}
                       />
                     </td>
+
+                    {/* CASILLA ACTIVABLE: USO / DESUSO */}
+                    <td className="p-4 text-center align-top">
+                      <div className="flex items-center justify-center gap-2 mt-1.5">
+                        <input
+                          type="checkbox"
+                          checked={item.enUso !== undefined ? item.enUso : true}
+                          disabled={!modoEdicion}
+                          onChange={(e) => handleInventarioChange(item.id, "enUso", e.target.checked)}
+                          className={`w-4 h-4 accent-purple-700 rounded transition-transform transform active:scale-95 ${
+                            modoEdicion ? "cursor-pointer" : "cursor-default"
+                          }`}
+                        />
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          (item.enUso !== undefined ? item.enUso : true) 
+                            ? "bg-green-100 text-green-700" 
+                            : "bg-red-100 text-red-700"
+                        }`}>
+                          {(item.enUso !== undefined ? item.enUso : true) ? "En Uso" : "Desuso"}
+                        </span>
+                      </div>
+                    </td>
                     
-                    {/* OBSERVACIONES CON CARGA DE TEXTO LARGO */}
+                    {/* OBSERVACIONES */}
                     <td className="p-4 align-top">
                       {modoEdicion ? (
                         <textarea
@@ -294,7 +345,7 @@ const BienesMobiliario = () => {
         </div>
       </div>
 
-      {/* WINDOW/MODAL SECUNDARIO: MODAL CON MEJORAS PARA TEXTO LARGO */}
+      {/* MODAL DE ENTRADA MASIVA */}
       {modalCargaAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/70 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl max-w-5xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
@@ -302,7 +353,7 @@ const BienesMobiliario = () => {
             <div className="flex justify-between items-center pb-4 border-b mb-4">
               <div>
                 <h3 className="text-xl font-black text-gray-900">Ingreso Controlado de Bienes</h3>
-                <p className="text-xs text-gray-500">Puedes escribir observaciones extensas. La ventana adaptará su tamaño de manera interna.</p>
+                <p className="text-xs text-gray-500">Puedes escribir observaciones extensas y pre-configurar el estado de operatividad.</p>
               </div>
               <button 
                 onClick={() => setModalCargaAbierto(false)}
@@ -318,7 +369,8 @@ const BienesMobiliario = () => {
                   <tr className="bg-gray-50 text-gray-600 text-xs font-bold uppercase border-b">
                     <th className="p-3 w-4/12">Nombre del Artículo *</th>
                     <th className="p-3 w-2/12 text-center">Cantidad</th>
-                    <th className="p-3 w-5/12">Observaciones Detalladas</th>
+                    <th className="p-3 w-2/12 text-center">Estado Uso</th>
+                    <th className="p-3 w-3/12">Observaciones Detalladas</th>
                     <th className="p-3 w-1/12 text-center">Remover</th>
                   </tr>
                 </thead>
@@ -347,7 +399,22 @@ const BienesMobiliario = () => {
                         />
                       </td>
 
-                      {/* TEXTAREA EN EL MODAL PARA COMODIDAD DE ESCRITURA */}
+                      <td className="p-2 text-center align-top">
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <input
+                            type="checkbox"
+                            checked={item.enUso}
+                            onChange={(e) => handleCargaChange(item.id, "enUso", e.target.checked)}
+                            className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                          />
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                            item.enUso ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}>
+                            {item.enUso ? "En Uso" : "Desuso"}
+                          </span>
+                        </div>
+                      </td>
+
                       <td className="p-2 align-top">
                         <textarea
                           rows="2"
