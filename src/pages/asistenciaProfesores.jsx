@@ -17,10 +17,8 @@ const AsistenciasPersonal = () => {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [ordenAlfabetico, setOrdenAlfabetico] = useState(false);
 
-  const [datosPersonal, setDatosPersonal] = useState({
-    Mañana: [],
-    Tarde: []
-  });
+  // Lista de personal obtenida del backend
+  const [personal, setPersonal] = useState([]);
 
   const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
   const semanas = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
@@ -28,59 +26,39 @@ const AsistenciasPersonal = () => {
 
   const META_HORAS_SEMANALES = 35;
 
-  // 2. FUNCIONES DE CÁLCULO DE TIEMPO REVISADAS
-  const calcularHorasDia = (entrada, salida) => {
-    if (!entrada || !salida) return 0;
-
-    const [hEntrada, mEntrada] = entrada.split(':').map(Number);
-    const [hSalida, mSalida] = salida.split(':').map(Number);
-
-    let minutosEntrada = hEntrada * 60 + mEntrada;
-    let minutosSalida = hSalida * 60 + mSalida;
-
-    // Si la salida es menor que la entrada, cruzó la medianoche (ej: entra 10 PM, sale 2 AM)
-    if (minutosSalida < minutosEntrada) {
-      minutosSalida += 24 * 60;
-    }
-
-    // Si por alguna razón son idénticos, es 0
-    if (minutosSalida === minutosEntrada) return 0;
-
-    return parseFloat(((minutosSalida - minutosEntrada) / 60).toFixed(2));
-  };
-
-  const calcularHorasSemanales = (empleado) => {
-    const dias = empleado.asistencia || {};
-    const total = Object.values(dias).reduce((acumulador, horasDia) => {
-      return acumulador + calcularHorasDia(horasDia.entrada, horasDia.salida);
-    }, 0);
-    return parseFloat(total.toFixed(2));
-  };
-
-  const handleTiempoChange = (cedulaEmpleado, dia, campo, valor) => {
-    setDatosPersonal(prev => ({
-      ...prev,
-      [turnoSeleccionado]: prev[turnoSeleccionado].map(empleado =>
-        empleado.cedula === cedulaEmpleado
-          ? {
-              ...empleado,
-              asistencia: {
-                ...empleado.asistencia,
-                [dia]: {
-                  ...empleado.asistencia[dia],
-                  [campo]: valor
-                }
-              }
-            }
-          : empleado
-      )
-    }));
-  };
-
+  // 2. FUNCIÓN DE CARGA DESDE EL BACKEND (Adaptada al Controlador)
   const cargarAsistencias = async () => {
     try {
-      const parametros = { turno: turnoSeleccionado, mes: mesSeleccionado, semana: semanaSeleccionada };
-      console.log("Cargando matriz con parámetros:", parametros);
+      const parametros = { 
+        turno: turnoSeleccionado, 
+        mes: mesSeleccionado, 
+        semana: semanaSeleccionada 
+      };
+
+      if (window.pywebview && window.pywebview.api) {
+        const res = await window.pywebview.api.cargar_matriz_asistencia_personal(parametros);
+        if (res.status === 'success') {
+          // Mapeamos los datos para enriquecerlos con los campos de hora visuales del front
+          const datosAdaptados = res.data.map(emp => {
+            const asistenciaVisual = {};
+            diasSemana.forEach(dia => {
+              // Si el controlador devuelve True (Presente), marcamos un horario por defecto para el cálculo visual
+              const presente = emp.asistencia[dia] || false;
+              asistenciaVisual[dia] = {
+                entrada: presente ? '07:00' : '',
+                salida: presente ? '14:00' : '',
+                presente: presente
+              };
+            });
+            return { ...emp, asistencia: asistenciaVisual };
+          });
+          setPersonal(datosAdaptados);
+        } else {
+          console.error("Error del backend:", res.message);
+        }
+      } else {
+        console.warn("Entorno pywebview no detectado. Modo desarrollo activo.");
+      }
     } catch (error) {
       console.error("Error al cargar asistencias:", error);
     }
@@ -90,6 +68,48 @@ const AsistenciasPersonal = () => {
     cargarAsistencias();
   }, [turnoSeleccionado, mesSeleccionado, semanaSeleccionada]);
 
+  // 3. FUNCIONES DE CÁLCULO VISUAL
+  const calcularHorasDia = (entrada, salida) => {
+    if (!entrada || !salida) return 0;
+    const [hEntrada, mEntrada] = entrada.split(':').map(Number);
+    const [hSalida, mSalida] = salida.split(':').map(Number);
+
+    let minutosEntrada = hEntrada * 60 + mEntrada;
+    let minutosSalida = hSalida * 60 + mSalida;
+
+    if (minutosSalida < minutosEntrada) minutosSalida += 24 * 60;
+    if (minutosSalida === minutosEntrada) return 0;
+
+    return parseFloat(((minutosSalida - minutosEntrada) / 60).toFixed(2));
+  };
+
+  const calcularHorasSemanales = (empleado) => {
+    const dias = empleado.asistencia || {};
+    const total = Object.values(dias).reduce((acumulador, diaData) => {
+      return acumulador + (diaData.presente ? calcularHorasDia(diaData.entrada, diaData.salida) : 0);
+    }, 0);
+    return parseFloat(total.toFixed(2));
+  };
+
+  // Maneja cambios tanto en los inputs de hora como en el estado de asistencia
+  const handleTiempoChange = (cedulaEmpleado, dia, campo, valor) => {
+    setPersonal(prev => prev.map(empleado => {
+      if (empleado.cedula === cedulaEmpleado) {
+        const diaActualizado = { ...empleado.asistencia[dia], [campo]: valor };
+        // Si hay hora de entrada y salida, se marca automáticamente como Presente (True)
+        if (campo === 'entrada' || campo === 'salida') {
+          diaActualizado.presente = Boolean(diaActualizado.entrada && diaActualizado.salida);
+        }
+        return {
+          ...empleado,
+          asistencia: { ...empleado.asistencia, [dia]: diaActualizado }
+        };
+      }
+      return empleado;
+    }));
+  };
+
+  // 4. REGISTRO DE NUEVO PERSONAL AL BACKEND
   const agregarPersonal = async (e) => {
     e.preventDefault();
     if (!cedula || !nombre.trim() || !cargo.trim() || !horasAdministrativas) {
@@ -97,42 +117,75 @@ const AsistenciasPersonal = () => {
       return;
     }
 
-    const diasBaseHoras = {
-      Lunes: { entrada: '', salida: '' }, Martes: { entrada: '', salida: '' },
-      Miércoles: { entrada: '', salida: '' }, Jueves: { entrada: '', salida: '' },
-      Viernes: { entrada: '', salida: '' }
-    };
-
     const nuevoEmpleado = {
-      cedula: parseInt(cedula), nombre: nombre.trim(), cargo: cargo.trim(),
-      horas_administrativas: parseInt(horasAdministrativas), asistencia: diasBaseHoras
+      cedula: parseInt(cedula), 
+      nombre: nombre.trim(), 
+      cargo: cargo.trim(),
+      turno: turnoSeleccionado,
+      horas_administrativas: parseInt(horasAdministrativas)
     };
 
-    setDatosPersonal(prev => ({
-      ...prev,
-      [turnoSeleccionado]: [...prev[turnoSeleccionado], nuevoEmpleado]
-    }));
-
-    setCedula(''); setNombre(''); setCargo(''); setHorasAdministrativas('');
+    if (window.pywebview && window.pywebview.api) {
+      try {
+        const res = await window.pywebview.api.registrar_trabajador(nuevoEmpleado);
+        if (res.status === 'success') {
+          alert(`✅ ${res.message}`);
+          setCedula(''); setNombre(''); setCargo(''); setHorasAdministrativas('');
+          cargarAsistencias(); // Recargamos la lista desde la base de datos
+        } else {
+          alert(`❌ Error al registrar: ${res.message}`);
+        }
+      } catch (error) {
+        console.error("Error al comunicar con Python:", error);
+        alert("Error crítico de conexión.");
+      }
+    }
   };
 
+  // 5. ENVIAR ASISTENCIAS AL BACKEND (Adaptado exactamente al formato que pide PersonalController)
   const guardarCambios = async () => {
+    // Transformamos el estado visual al formato simple booleano que pide tu SQL
+    const registrosLimpios = personal.map(empleado => {
+      const asistenciaBooleana = {};
+      diasSemana.forEach(dia => {
+        // Enviar True si está presente, False si está ausente
+        asistenciaBooleana[dia] = Boolean(empleado.asistencia[dia]?.presente);
+      });
+      return {
+        cedula: empleado.cedula,
+        asistencia: asistenciaBooleana
+      };
+    });
+
     const payload = {
-      mes: mesSeleccionado, semana: semanaSeleccionada,
-      registros: datosPersonal[turnoSeleccionado].map(empleado => ({
-        cedula: empleado.cedula, asistencia: empleado.asistencia 
-      }))
+      mes: mesSeleccionado, 
+      semana: semanaSeleccionada,
+      registros: registrosLimpios
     };
-    console.log("Payload enviado a guardar_asistencias_personal:", payload);
-    alert(`Horarios de la ${semanaSeleccionada} guardados con éxito.`);
+
+    if (window.pywebview && window.pywebview.api) {
+      try {
+        const res = await window.pywebview.api.guardar_asistencias_personal(payload);
+        if (res.status === 'success') {
+          alert(`✅ ¡Horarios y asistencias de ${semanaSeleccionada} guardados con éxito en BD!`);
+        } else {
+          alert(`❌ Error en Base de Datos: ${res.message}`);
+        }
+      } catch (error) {
+        console.error("Error al guardar asistencias:", error);
+        alert("Error crítico: No se pudo conectar con la base de datos.");
+      }
+    } else {
+      console.log("Payload preparado para enviar a Python:", payload);
+      alert("⚠️ Entorno de escritorio no detectado.");
+    }
   };
 
-  const personalProcesado = [...datosPersonal[turnoSeleccionado]].sort((a, b) => {
+  const personalProcesado = [...personal].sort((a, b) => {
     if (ordenAlfabetico) return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
     return a.cedula - b.cedula; 
   });
 
-  // El estilo de fondo (bg-slate-900) fue eliminado para respetar el diseño de tu app
   return (
     <div className="p-8 page-transition relative">
       <div className="flex flex-col lg:flex-row gap-6">
@@ -158,7 +211,7 @@ const AsistenciasPersonal = () => {
               <input type="number" value={horasAdministrativas} onChange={(e) => setHorasAdministrativas(e.target.value)} placeholder="Ej. 36" className="w-full mt-1 p-2 border rounded-lg text-sm text-gray-700 focus:outline-none focus:border-purple-500" />
             </div>
             <button type="submit" className="bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all shadow-md mt-2">
-              + Registrar en Turno
+              + Registrar en Turno {turnoSeleccionado}
             </button>
           </form>
         </aside>
@@ -188,7 +241,6 @@ const AsistenciasPersonal = () => {
                 {ordenAlfabetico ? '🔤 Orden: A-Z' : '📋 Orden: Cédula'}
               </button>
 
-              {/* Aquí está el botón de volver atrás que faltaba */}
               <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-50 flex items-center shadow-sm">
                 🏠 Volver al Inicio
               </Link>
@@ -199,7 +251,7 @@ const AsistenciasPersonal = () => {
             </div>
           </header>
 
-          {/* FILTROS DE NAVEGACIÓN (Colores corregidos al estilo claro original) */}
+          {/* FILTROS DE NAVEGACIÓN */}
           <div className="flex flex-wrap gap-4 mb-4 text-gray-800">
             <div className="flex bg-gray-200 p-1 rounded-xl font-bold shadow-inner border border-gray-300">
               <button onClick={() => setTurnoSeleccionado('Mañana')} className={`px-4 py-1.5 rounded-lg text-sm transition-all ${turnoSeleccionado === 'Mañana' ? 'bg-white text-purple-700 shadow-md' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -245,14 +297,13 @@ const AsistenciasPersonal = () => {
                   {personalProcesado.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="p-8 text-center text-gray-400 italic">
-                        No hay personal registrado en este bloque.
+                        No hay personal registrado para el turno {turnoSeleccionado}.
                       </td>
                     </tr>
                   ) : (
                     personalProcesado.map((empleado) => {
                       const horasAcumuladas = calcularHorasSemanales(empleado);
                       const cumpleMeta = horasAcumuladas >= META_HORAS_SEMANALES;
-                      // Cálculo de porcentaje para la barra de progreso
                       const porcentaje = Math.min((horasAcumuladas / META_HORAS_SEMANALES) * 100, 100);
 
                       return (
@@ -264,8 +315,8 @@ const AsistenciasPersonal = () => {
                           </td>
 
                           {diasSemana.map(dia => {
-                            const diaData = empleado.asistencia?.[dia] || { entrada: '', salida: '' };
-                            const horasDelDia = calcularHorasDia(diaData.entrada, diaData.salida);
+                            const diaData = empleado.asistencia?.[dia] || { entrada: '', salida: '', presente: false };
+                            const horasDelDia = diaData.presente ? calcularHorasDia(diaData.entrada, diaData.salida) : 0;
 
                             return (
                               <td key={dia} className="p-2 text-center bg-purple-50/10 border-x border-gray-100">
