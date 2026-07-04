@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const AsistenciasDetalladas = () => {
   // Matriz de meses en español para la asignación automática
   const mesesAnio = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
@@ -22,13 +22,13 @@ const AsistenciasDetalladas = () => {
   const [nivelSeleccionado, setNivelSeleccionado] = useState("Maternal");
   const [turnoSeleccionado, setTurnoSeleccionado] = useState("Mañana");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("Semana 1");
-  
+
   // Cambiado de "Junio" fijo a la lectura directa del mes actual del sistema
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualSistema);
-  
+
   // Datos reales desde la BD
   const [alumnos, setAlumnos] = useState([]);
-  
+
   const niveles = ["Maternal", "1er Nivel", "2do Nivel", "3er Nivel"];
   const turnos = ["Mañana", "Tarde"];
   const semanas = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
@@ -42,7 +42,7 @@ const AsistenciasDetalladas = () => {
   const cargarMatriz = async () => {
     if (window.pywebview && window.pywebview.api) {
       const res = await window.pywebview.api.cargar_matriz_asistencia({
-        grado: nivelSeleccionado, turno: turnoSeleccionado, 
+        grado: nivelSeleccionado, turno: turnoSeleccionado,
         semana: semanaSeleccionada, mes: mesSeleccionado, seccion: "A" // Ajustar si hay más secciones
       });
       if (res.status === 'success') setAlumnos(res.data);
@@ -101,18 +101,18 @@ const AsistenciasDetalladas = () => {
           </header>
 
           <div className="flex gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 justify-between items-center">
-             <div className="flex gap-4">
-               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                  {turnos.map(t => <button key={t} onClick={() => setTurnoSeleccionado(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
-               </div>
-               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                  {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white" : "text-gray-600"}`}>{s}</button>)}
-               </div>
-             </div>
-             {/* Distintivo estético para recordar bajo qué mes se guardará en la base de datos */}
-             <div className="text-xs font-bold text-gray-500 uppercase bg-gray-200 px-3 py-2 rounded-lg">
-               Guardando en: <span className="text-purple-700 font-black">{mesSeleccionado}</span>
-             </div>
+            <div className="flex gap-4">
+              <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+                {turnos.map(t => <button key={t} onClick={() => setTurnoSeleccionado(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
+              </div>
+              <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+                {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white" : "text-gray-600"}`}>{s}</button>)}
+              </div>
+            </div>
+            {/* Distintivo estético para recordar bajo qué mes se guardará en la base de datos */}
+            <div className="text-xs font-bold text-gray-500 uppercase bg-gray-200 px-3 py-2 rounded-lg">
+              Guardando en: <span className="text-purple-700 font-black">{mesSeleccionado}</span>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-xl overflow-hidden">
@@ -125,7 +125,7 @@ const AsistenciasDetalladas = () => {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {alumnos.length === 0 ? (
-                    <tr><td colSpan="7" className="p-8 text-center text-gray-400">No hay estudiantes cargados en esta sección.</td></tr>
+                  <tr><td colSpan="7" className="p-8 text-center text-gray-400">No hay estudiantes cargados en esta sección.</td></tr>
                 ) : alumnos.map(al => (
                   <tr key={al.id} className="hover:bg-gray-50">
                     <td className="p-4 font-bold">{al.nombre}</td>

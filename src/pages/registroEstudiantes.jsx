@@ -88,7 +88,7 @@ const RegistroAlumnos = () => {
     }
   };
 
-    const agregarFila = () => {
+  const agregarFila = () => {
     const nuevoId = Date.now();
     const defectoAcademico = opcionesAcademicas[0].valores;
 
@@ -227,8 +227,8 @@ const RegistroAlumnos = () => {
             <button
               onClick={() => setModoEdicion(!modoEdicion)}
               className={`px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95 border ${modoEdicion
-                  ? 'bg-red-500 hover:bg-red-700/80 text-white border-red-700'
-                  : 'bg-slate-700/50 hover:bg-slate-800 text-white border-slate-900'
+                ? 'bg-red-500 hover:bg-red-700/80 text-white border-red-700'
+                : 'bg-slate-700/50 hover:bg-slate-800 text-white border-slate-900'
                 }`}
             >
               {modoEdicion ? '🛑 Salir de Edición' : '⚙️ Gestionar Matrícula'}
@@ -473,23 +473,100 @@ const RegistroAlumnos = () => {
                       {opcionesCondicion.map(cond => <option key={cond} value={cond}>{cond}</option>)}
                     </select>
                   </div>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
                     <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
                   </div>
-                  
-                  {/* SE DIVIDIÓ LA COLUMNA PARA INCLUIR LA CÉDULA DEL REPRESENTANTE INSTITUCIONAL */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Representante Institucional</label>
-                    <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteInstitucional} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteInstitucional', e.target.value)} placeholder="Nombre del Institucional" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">C.I. Rep. Institucional</label>
-                    <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_ci} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_ci', e.target.value)} placeholder="Ej. 12345678" />
+
+                  {/* SECCIÓN MODIFICADA: CHECKBOX Y TODOS LOS CAMPOS DEL REPRESENTANTE INSTITUCIONAL */}
+                  <div className="flex items-end pb-2 md:col-span-2">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                        checked={estudianteActivo.tieneRepInstitucional || false}
+                        onChange={(e) => handleInputChange(estudianteActivo.id, 'tieneRepInstitucional', e.target.checked)}
+                      />
+                      <span className="text-xs font-bold text-gray-600">¿Rep. Institucional distinto al legal?</span>
+                    </label>
                   </div>
 
+                  {estudianteActivo.tieneRepInstitucional ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Nombre (Rep. Institucional)</label>
+                        <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteInstitucional} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteInstitucional', e.target.value)} placeholder="Ej. Ana Gómez" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">C.I. Rep. Institucional</label>
+                        <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_ci} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_ci', e.target.value)} placeholder="Ej. 12345678" />
+                      </div>
+                      <div className="md:col-span-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Teléfono (Inst.)</label>
+                        <input type="tel" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_telefono} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_telefono', e.target.value)} placeholder="Ej. 0414-1234567" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Fecha y Lugar de Nacimiento (Inst.)</label>
+                        <input type="text" placeholder="Ej: 15/04/1985, Valencia" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_fechaLugarNac} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_fechaLugarNac', e.target.value)} />
+                      </div>
+                      <div className="md:col-span-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Correo Electrónico (Inst.)</label>
+                        <input type="email" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_correo} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_correo', e.target.value)} />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Grado de Instrucción (Inst.)</label>
+                        <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.re_inst_gradoInstruccion} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_gradoInstruccion', e.target.value)}>
+                          <option value="">Seleccione...</option>
+                          <option value="Básica">Básica</option>
+                          <option value="Bachiller">Bachiller</option>
+                          <option value="Técnico Medio">Técnico Medio</option>
+                          <option value="TSU">TSU</option>
+                          <option value="Universitario">Universitario</option>
+                          <option value="Postgrado">Postgrado</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">¿Trabaja? (Inst.)</label>
+                        <select className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-700" value={estudianteActivo.re_inst_trabaja} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_trabaja', e.target.value)}>
+                          <option value="Sí">Sí</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia (Inst.)</label>
+                        <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.re_inst_direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_direccion', e.target.value)} />
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className={`block text-xs font-bold mb-1 ${estudianteActivo.re_inst_trabaja === 'Sí' ? 'text-gray-600' : 'text-gray-400'}`}>¿Dónde trabaja? (Inst.)</label>
+                        <input
+                          type="text"
+                          className={`w-full p-2 border rounded outline-none text-sm ${estudianteActivo.re_inst_trabaja === 'Sí' ? 'focus:border-blue-500 bg-white text-gray-800' : 'bg-gray-100 cursor-not-allowed text-gray-400'}`}
+                          value={estudianteActivo.re_inst_dondeTrabaja}
+                          onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_dondeTrabaja', e.target.value)}
+                          disabled={estudianteActivo.re_inst_trabaja === 'No'}
+                          placeholder={estudianteActivo.re_inst_trabaja === 'No' ? 'No aplica' : 'Empresa o lugar de trabajo'}
+                        />
+                      </div>
+                      {/* Separador sutil para los datos del estudiante que siguen */}
+                      <div className="md:col-span-3 border-b border-gray-200 my-2"></div>
+                    </>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1">Representante Institucional</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded bg-gray-100 outline-none text-sm text-gray-500 cursor-not-allowed"
+                        value={estudianteActivo.representanteLegal || ''}
+                        disabled
+                        placeholder="Asignado automático (Rep. Legal)"
+                      />
+                    </div>
+                  )}
+                  {/* FIN SECCIÓN MODIFICADA */}
+
                   <div className="md:col-span-3">
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia (Estudiante)</label>
                     <textarea className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" rows="2" value={estudianteActivo.direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'direccion', e.target.value)}></textarea>
                   </div>
                 </div>
@@ -498,10 +575,10 @@ const RegistroAlumnos = () => {
               {/* SECCIÓN 2: DATOS DEL REPRESENTANTE */}
               <div className="bg-white p-6 rounded-xl border shadow-sm">
                 <h3 className="text-lg font-black text-[#0F172A] mb-4 border-b pb-2 flex items-center">
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-2">2</span> Datos del Representante
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-2">2</span> Datos del Representante Legal
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+                  <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
                     <input type="text" className="w-full p-2 border rounded focus:border-blue-500 outline-none text-sm text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
                   </div>
