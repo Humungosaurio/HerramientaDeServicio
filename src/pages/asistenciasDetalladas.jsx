@@ -26,6 +26,9 @@ const AsistenciasDetalladas = () => {
   // Cambiado de "Junio" fijo a la lectura directa del mes actual del sistema
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualSistema);
 
+  // NUEVO: Estado para el buscador por nombre
+  const [busquedaAlumno, setBusquedaAlumno] = useState("");
+
   // Datos reales desde la BD
   const [alumnos, setAlumnos] = useState([]);
 
@@ -37,6 +40,8 @@ const AsistenciasDetalladas = () => {
   // Cargar datos al cambiar filtros
   useEffect(() => {
     cargarMatriz();
+    // Limpiar el buscador al cambiar de sección
+    setBusquedaAlumno("");
   }, [nivelSeleccionado, turnoSeleccionado, semanaSeleccionada, mesSeleccionado]);
 
   const cargarMatriz = async () => {
@@ -45,7 +50,14 @@ const AsistenciasDetalladas = () => {
         grado: nivelSeleccionado, turno: turnoSeleccionado,
         semana: semanaSeleccionada, mes: mesSeleccionado, seccion: "A" // Ajustar si hay más secciones
       });
-      if (res.status === 'success') setAlumnos(res.data);
+      if (res.status === 'success') {
+        // Asegurar que tengan el campo estado, por defecto Vigente
+        const adaptados = res.data.map(al => ({
+          ...al,
+          estado: al.estado || 'Vigente'
+        }));
+        setAlumnos(adaptados);
+      }
     }
   };
 
@@ -59,9 +71,12 @@ const AsistenciasDetalladas = () => {
   };
 
   const guardarCambiosBD = async () => {
+    // NUEVO: Filtrar para enviar solo los vigentes a la base de datos
+    const alumnosVigentes = alumnos.filter(al => al.estado !== 'Retirado');
+
     if (window.pywebview && window.pywebview.api) {
       const res = await window.pywebview.api.guardar_asistencias({
-        mes: mesSeleccionado, semana: semanaSeleccionada, registros: alumnos
+        mes: mesSeleccionado, semana: semanaSeleccionada, registros: alumnosVigentes
       });
       if (res.status === 'success') {
         alert("📥 ¡Reporte guardado con éxito!");
@@ -70,6 +85,11 @@ const AsistenciasDetalladas = () => {
       }
     }
   };
+
+  // NUEVO: Lógica combinada para mostrar solo Vigentes y aplicar el buscador
+  const alumnosMostrados = alumnos
+    .filter(al => al.estado !== 'Retirado')
+    .filter(al => al.nombre.toLowerCase().includes(busquedaAlumno.toLowerCase().trim()));
 
   return (
     <div className="page-transition p-8 text-gray-800">
@@ -115,6 +135,17 @@ const AsistenciasDetalladas = () => {
             </div>
           </div>
 
+          {/* NUEVO: Buscador de alumnos */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="🔍 Buscar alumno por nombre..."
+              className="w-full md:w-1/2 p-2.5 border border-gray-300 rounded-lg outline-none focus:border-purple-500 text-sm bg-white"
+              value={busquedaAlumno}
+              onChange={(e) => setBusquedaAlumno(e.target.value)}
+            />
+          </div>
+
           <div className="bg-white rounded-xl shadow-xl overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -124,15 +155,26 @@ const AsistenciasDetalladas = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {alumnos.length === 0 ? (
-                  <tr><td colSpan="7" className="p-8 text-center text-gray-400">No hay estudiantes cargados en esta sección.</td></tr>
-                ) : alumnos.map(al => (
+                {alumnosMostrados.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="p-8 text-center text-gray-400">
+                      {alumnos.filter(al => al.estado !== 'Retirado').length === 0 
+                        ? "No hay estudiantes vigentes cargados en esta sección." 
+                        : "No se encontraron alumnos con ese nombre."}
+                    </td>
+                  </tr>
+                ) : alumnosMostrados.map(al => (
                   <tr key={al.id} className="hover:bg-gray-50">
                     <td className="p-4 font-bold">{al.nombre}</td>
-                    <td className="p-4 text-center text-gray-400">{al.sexo.toUpperCase()}</td>
+                    <td className="p-4 text-center text-gray-400">{al.sexo?.toUpperCase() || ''}</td>
                     {diasSemana.map(dia => (
                       <td key={dia} className="p-4 text-center">
-                        <input type="checkbox" checked={al.asistencia[dia]} onChange={() => handleAsistenciaChange(al.id, dia)} className="w-6 h-6 accent-purple-700" />
+                        <input 
+                          type="checkbox" 
+                          checked={al.asistencia[dia] || false} 
+                          onChange={() => handleAsistenciaChange(al.id, dia)} 
+                          className="w-6 h-6 accent-purple-700 cursor-pointer" 
+                        />
                       </td>
                     ))}
                   </tr>
