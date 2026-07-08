@@ -6,22 +6,15 @@ const RegistroAlumnos = () => {
   const [showModal, setShowModal] = useState(false);
   const [estudianteActivoId, setEstudianteActivoId] = useState(null);
 
-  // Estado para controlar el texto de búsqueda independiente de la tabla
   const [busquedaAcademica, setBusquedaAcademica] = useState("");
   const [dropdownAbiertoId, setDropdownAbiertoId] = useState(null);
-
-  // Estado para el buscador por nombre o cédula en la tabla principal
   const [busquedaEstudiante, setBusquedaEstudiante] = useState("");
-
-  // NUEVO: Estado para el buscador independiente dentro del Modal de Listado General
   const [busquedaModal, setBusquedaModal] = useState("");
-
   const [modoEdicion, setModoEdicion] = useState(false);
 
   const opcionesCondicion = ['Ninguna', 'Autismo (TEA)', 'TDAH', 'Dislexia', 'Otra'];
   const opcionesGenero = ['Masculino', 'Femenino'];
 
-  // 1. Definición exacta de las reglas de tu plantel
   const reglasPlantel = [
     {
       nivel: 'Maternal',
@@ -53,7 +46,6 @@ const RegistroAlumnos = () => {
     }
   ];
 
-  // 2. Generación automática de las opciones para el buscador académico
   const opcionesAcademicas = [];
   reglasPlantel.forEach(regla => {
     regla.distribucion.forEach(dist => {
@@ -67,7 +59,6 @@ const RegistroAlumnos = () => {
     });
   });
 
-  // FILTRADO INTELIGENTE: Divide la búsqueda en palabras sueltas
   const opcionesFiltradas = opcionesAcademicas.filter(opt => {
     if (!busquedaAcademica.trim()) return true;
     const palabrasBusqueda = busquedaAcademica.toLowerCase().trim().split(/\s+/);
@@ -75,7 +66,6 @@ const RegistroAlumnos = () => {
     return palabrasBusqueda.every(palabra => textoOpcion.includes(palabra));
   });
 
-  // Lógica para filtrar estudiantes en la Tabla Principal
   const estudiantesFiltrados = estudiantes.filter(est => {
     if (!busquedaEstudiante.trim()) return true;
     const termino = busquedaEstudiante.toLowerCase().trim();
@@ -84,7 +74,6 @@ const RegistroAlumnos = () => {
     return coincideNombre || coincideCedula;
   });
 
-  // NUEVO: Lógica para filtrar estudiantes específicamente en el Modal del Listado General
   const estudiantesFiltradosModal = estudiantes.filter(est => {
     if (!busquedaModal.trim()) return true;
     const termino = busquedaModal.toLowerCase().trim();
@@ -93,7 +82,6 @@ const RegistroAlumnos = () => {
     return coincideNombre || coincideCedula;
   });
 
-  // FUNCIÓN: Ordenar la matrícula actual de la A a la Z
   const ordenarEstudiantesAZ = () => {
     const estudiantesOrdenados = [...estudiantes].sort((a, b) => {
       if (!a.nombre.trim()) return 1;
@@ -103,7 +91,6 @@ const RegistroAlumnos = () => {
     setEstudiantes(estudiantesOrdenados);
   };
 
-  // FUNCIÓN: Eliminar estudiante por ID
   const eliminarEstudiante = (id) => {
     const confirmar = window.confirm("¿Está seguro de que desea eliminar a este estudiante de la matrícula actual?");
     if (confirmar) {
@@ -117,24 +104,36 @@ const RegistroAlumnos = () => {
 
     const nuevoEstudiante = {
       id: nuevoId,
-      // Datos básicos
       nombre: '',
+      edad: '',
       genero: '',
       direccion: '',
       cedulaEscolar: '',
       fechaNacimiento: '',
       condicion: 'Ninguna',
-      estado: 'Vigente', // Se agrega estado por defecto
-      // Asignación académica
+      estado: 'Vigente',
+      tipoSangre: '',
+      tallaMono: '',
+      tallaCamisa: '',
+      tallaCalzado: '',
       ...defectoAcademico,
-      // Representantes
       representanteLegal: '',
       representanteInstitucional: '',
       re_inst_ci: '',
-      // Datos del representante legal
+      re_inst_parentesco: '',
+      re_inst_fechaNacimiento: '',
+      re_inst_lugarNacimiento: '',
+      re_inst_telefono: '',
+      re_inst_correo: '',
+      re_inst_direccion: '',
+      re_inst_trabaja: 'No',
+      re_inst_dondeTrabaja: '',
+      re_inst_gradoInstruccion: '',
       repNombre: '',
       repCi: '',
-      repFechaLugarNac: '',
+      repParentesco: '',
+      repFechaNacimiento: '',
+      repLugarNacimiento: '',
       repDireccion: '',
       repTrabaja: 'No',
       repDondeTrabaja: '',
@@ -145,8 +144,6 @@ const RegistroAlumnos = () => {
 
     setEstudiantes([...estudiantes, nuevoEstudiante]);
     setEstudianteActivoId(nuevoId);
-    
-    // Limpiamos la búsqueda para que el nuevo registro sea visible
     setBusquedaEstudiante("");
   };
 
@@ -155,16 +152,22 @@ const RegistroAlumnos = () => {
       prevEstudiantes.map(est => {
         if (est.id === id) {
           let copiaEstudiante = { ...est };
+          let nuevoValor = valor;
 
-          if (campo === 'combinacionAcademica') {
-            copiaEstudiante = { ...copiaEstudiante, ...valor };
-          } else {
-            copiaEstudiante[campo] = valor;
+          const camposNumericos = ['edad', 'cedulaEscolar', 'repCi', 're_inst_ci', 'repTelefono', 're_inst_telefono', 'tallaCalzado'];
+          if (camposNumericos.includes(campo)) {
+            nuevoValor = nuevoValor.replace(/\D/g, ''); 
           }
 
-          if ((campo === 'edad' || campo === 'repEdad') && valor !== "") {
-            const num = parseInt(valor);
-            copiaEstudiante[campo] = num < 0 ? "0" : valor;
+          if (campo === 'combinacionAcademica') {
+            copiaEstudiante = { ...copiaEstudiante, ...nuevoValor };
+          } else {
+            copiaEstudiante[campo] = nuevoValor;
+          }
+
+          if (campo === 'edad' && nuevoValor !== "") {
+            const num = parseInt(nuevoValor);
+            copiaEstudiante[campo] = num < 0 ? "0" : nuevoValor;
           }
 
           return copiaEstudiante;
@@ -210,7 +213,6 @@ const RegistroAlumnos = () => {
       if (window.pywebview && window.pywebview.api) {
         for (const estudiante of estudiantesValidos) {
           const respuesta = await window.pywebview.api.registrar_estudiante_completo(estudiante);
-
           if (respuesta.status === 'success') {
             exitoCount++;
           } else {
@@ -255,17 +257,11 @@ const RegistroAlumnos = () => {
               {modoEdicion ? '🛑 Salir de Edición' : '⚙️ Gestionar Matrícula'}
             </button>
 
-            <button
-              onClick={ordenarEstudiantesAZ}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95"
-            >
+            <button onClick={ordenarEstudiantesAZ} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95">
               🔤 Ordenar A-Z
             </button>
 
-            <button
-              onClick={() => setShowModal(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center"
-            >
+            <button onClick={() => setShowModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center">
               📊 Ver Listado General
             </button>
 
@@ -293,17 +289,13 @@ const RegistroAlumnos = () => {
               />
             </div>
 
-            <button
-              onClick={agregarFila}
-              className="bg-purple-50 text-purple-700 hover:bg-purple-100 px-4 py-2 rounded-lg font-bold flex items-center text-sm transition-colors shadow-sm border border-purple-200 whitespace-nowrap"
-            >
+            <button onClick={agregarFila} className="bg-purple-50 text-purple-700 hover:bg-purple-100 px-4 py-2 rounded-lg font-bold flex items-center text-sm transition-colors shadow-sm border border-purple-200 whitespace-nowrap">
               <span className="text-xl mr-2 leading-none">+</span> Añadir Nuevo Estudiante
             </button>
           </div>
 
           <div className="overflow-x-auto">
             <div className="min-w-[1300px] w-full">
-              {/* Se agregó 1.2fr para la Vigencia en el grid */}
               <div className="bg-white text-gray-500 text-xs font-bold uppercase tracking-widest grid grid-cols-[2fr_0.5fr_0.9fr_1.5fr_3fr_1.5fr_1.2fr_0.6fr] border-b border-gray-200 text-center items-center">
                 <div className="p-4 text-left">Nombre del Alumno</div>
                 <div className="p-4">Edad</div>
@@ -326,7 +318,7 @@ const RegistroAlumnos = () => {
                         <input type="text" placeholder="Nombre completo" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none font-medium text-sm text-gray-800" value={est.nombre} onChange={(e) => handleInputChange(est.id, 'nombre', e.target.value)} />
                       </div>
                       <div className="px-2 text-center">
-                        <input type="number" placeholder="0" min="0" className="w-full p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
+                        <input type="text" inputMode="numeric" placeholder="0" className="w-full p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad || ''} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
                       </div>
                       <div className="px-2">
                         <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.genero} onChange={(e) => handleInputChange(est.id, 'genero', e.target.value)}>
@@ -359,11 +351,7 @@ const RegistroAlumnos = () => {
                             <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
                             <div className="absolute left-2 right-2 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
                               {opcionesFiltradas.map(opt => (
-                                <div
-                                  key={opt.id}
-                                  onClick={() => seleccionarOpcionAcademica(est.id, opt)}
-                                  className="p-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 font-medium cursor-pointer transition-colors"
-                                >
+                                <div key={opt.id} onClick={() => seleccionarOpcionAcademica(est.id, opt)} className="p-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 font-medium cursor-pointer transition-colors">
                                   {opt.label}
                                 </div>
                               ))}
@@ -379,7 +367,6 @@ const RegistroAlumnos = () => {
                         <input type="text" placeholder="Nombre representante" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
                       </div>
 
-                      {/* NUEVA COLUMNA: Selector de Vigencia */}
                       <div className="px-2 text-center">
                         <select 
                           className={`w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-bold text-xs cursor-pointer text-center ${est.estado === 'Retirado' ? 'text-red-600' : 'text-green-600'}`}
@@ -393,21 +380,13 @@ const RegistroAlumnos = () => {
 
                       <div className="px-2 flex justify-center">
                         {modoEdicion ? (
-                          <button
-                            onClick={() => eliminarEstudiante(est.id)}
-                            className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 hover:text-red-800 transition-colors border border-red-100 animate-pulse"
-                            title="Eliminar Estudiante"
-                          >
+                          <button onClick={() => eliminarEstudiante(est.id)} className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 hover:text-red-800 transition-colors border border-red-100 animate-pulse" title="Eliminar Estudiante">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
                         ) : (
-                          <button
-                            onClick={() => setEstudianteActivoId(est.id)}
-                            className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100"
-                            title="Ver Expediente"
-                          >
+                          <button onClick={() => setEstudianteActivoId(est.id)} className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors border border-indigo-100" title="Ver Expediente">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
@@ -455,25 +434,69 @@ const RegistroAlumnos = () => {
                 <h3 className="text-lg font-black text-[#0F172A] mb-4 border-b pb-2 flex items-center">
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">1</span> Datos del Estudiante
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Nombre Completo del Alumno <span className="text-red-500">*</span></label>
                     <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.nombre} onChange={(e) => handleInputChange(estudianteActivo.id, 'nombre', e.target.value)} placeholder="Ej. Juan Pérez" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Cédula Escolar</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.cedulaEscolar} onChange={(e) => handleInputChange(estudianteActivo.id, 'cedulaEscolar', e.target.value)} />
+                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.cedulaEscolar} onChange={(e) => handleInputChange(estudianteActivo.id, 'cedulaEscolar', e.target.value)} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Fecha de Nacimiento</label>
                     <input type="date" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.fechaNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 'fechaNacimiento', e.target.value)} />
                   </div>
+                  
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Género</label>
                     <select className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.genero} onChange={(e) => handleInputChange(estudianteActivo.id, 'genero', e.target.value)}>
                       <option value="">Seleccione...</option>
                       {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Tipo de Sangre</label>
+                    <select className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.tipoSangre} onChange={(e) => handleInputChange(estudianteActivo.id, 'tipoSangre', e.target.value)}>
+                      <option value="">Seleccione...</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                      <option value="Desconocido">Desconocido</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Talla de Mono</label>
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.tallaMono} onChange={(e) => handleInputChange(estudianteActivo.id, 'tallaMono', e.target.value)} placeholder="Ej. 10, S, M" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Talla de Camisa</label>
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.tallaCamisa} onChange={(e) => handleInputChange(estudianteActivo.id, 'tallaCamisa', e.target.value)} placeholder="Ej. 10, S, M" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Talla de Calzado</label>
+                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.tallaCalzado} onChange={(e) => handleInputChange(estudianteActivo.id, 'tallaCalzado', e.target.value)} placeholder="Ej. 32" />
+                  </div>
+
+                  {/* AQUÍ ESTÁ EL CAMBIO PARA LA NEURODIVERGENCIA */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Condición (Neurodiversidad)</label>
+                    <input 
+                      type="text" 
+                      list="lista-condiciones" 
+                      className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700" 
+                      value={estudianteActivo.condicion} 
+                      onChange={(e) => handleInputChange(estudianteActivo.id, 'condicion', e.target.value)} 
+                      placeholder="Seleccione o escriba..."
+                    />
+                    <datalist id="lista-condiciones">
+                      {opcionesCondicion.map(cond => <option key={cond} value={cond} />)}
+                    </datalist>
                   </div>
 
                   <div className="md:col-span-2 relative">
@@ -498,11 +521,7 @@ const RegistroAlumnos = () => {
                         <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
                         <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
                           {opcionesFiltradas.map(opt => (
-                            <div
-                              key={opt.id}
-                              onClick={() => seleccionarOpcionAcademica(estudianteActivo.id, opt)}
-                              className="p-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-medium cursor-pointer transition-colors"
-                            >
+                            <div key={opt.id} onClick={() => seleccionarOpcionAcademica(estudianteActivo.id, opt)} className="p-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-medium cursor-pointer transition-colors">
                               {opt.label}
                             </div>
                           ))}
@@ -514,19 +533,12 @@ const RegistroAlumnos = () => {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Condición (Neurodiversidad)</label>
-                    <select className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.condicion} onChange={(e) => handleInputChange(estudianteActivo.id, 'condicion', e.target.value)}>
-                      {opcionesCondicion.map(cond => <option key={cond} value={cond}>{cond}</option>)}
-                    </select>
+                  <div className="md:col-span-4">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia (Estudiante)</label>
+                    <textarea className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" rows="2" value={estudianteActivo.direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'direccion', e.target.value)}></textarea>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
-                  </div>
-
-                  <div className="flex items-end pb-2 md:col-span-2">
+                  <div className="flex items-end pb-2 md:col-span-4">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -538,25 +550,39 @@ const RegistroAlumnos = () => {
                     </label>
                   </div>
 
-                  {estudianteActivo.tieneRepInstitucional ? (
+                  {estudianteActivo.tieneRepInstitucional && (
                     <>
-                      <div>
+                      <div className="md:col-span-4 border-b border-gray-200 my-2"><p className="text-sm font-bold text-gray-700">Representante Institucional</p></div>
+                      <div className="md:col-span-2">
                         <label className="block text-xs font-bold text-gray-600 mb-1">Nombre (Rep. Institucional)</label>
                         <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.representanteInstitucional} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteInstitucional', e.target.value)} placeholder="Ej. Ana Gómez" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-gray-600 mb-1">C.I. Rep. Institucional</label>
-                        <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_ci} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_ci', e.target.value)} placeholder="Ej. 12345678" />
+                        <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_ci} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_ci', e.target.value)} placeholder="Ej. 12345678" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Parentesco (Inst.)</label>
+                        <select className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.re_inst_parentesco} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_parentesco', e.target.value)}>
+                          <option value="">Seleccione...</option>
+                          <option value="Madre">Madre</option>
+                          <option value="Padre">Padre</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Fecha Nacimiento (Inst.)</label>
+                        <input type="date" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_fechaNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_fechaNacimiento', e.target.value)} />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Lugar de Nacimiento (Inst.)</label>
+                        <input type="text" placeholder="Ej: Valencia, Carabobo" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_lugarNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_lugarNacimiento', e.target.value)} />
                       </div>
                       <div className="md:col-span-1">
                         <label className="block text-xs font-bold text-gray-600 mb-1">Teléfono (Inst.)</label>
-                        <input type="tel" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_telefono} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_telefono', e.target.value)} placeholder="Ej. 0414-1234567" />
+                        <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_telefono} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_telefono', e.target.value)} placeholder="Ej. 04141234567" />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-xs font-bold text-gray-600 mb-1">Fecha y Lugar de Nacimiento (Inst.)</label>
-                        <input type="text" placeholder="Ej: 15/04/1985, Valencia" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_fechaLugarNac} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_fechaLugarNac', e.target.value)} />
-                      </div>
-                      <div className="md:col-span-1">
                         <label className="block text-xs font-bold text-gray-600 mb-1">Correo Electrónico (Inst.)</label>
                         <input type="email" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_correo} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_correo', e.target.value)} />
                       </div>
@@ -580,10 +606,6 @@ const RegistroAlumnos = () => {
                         </select>
                       </div>
                       <div className="md:col-span-3">
-                        <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia (Inst.)</label>
-                        <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_direccion', e.target.value)} />
-                      </div>
-                      <div className="md:col-span-3">
                         <label className={`block text-xs font-bold mb-1 ${estudianteActivo.re_inst_trabaja === 'Sí' ? 'text-gray-600' : 'text-gray-400'}`}>¿Dónde trabaja? (Inst.)</label>
                         <input
                           type="text"
@@ -594,25 +616,12 @@ const RegistroAlumnos = () => {
                           placeholder={estudianteActivo.re_inst_trabaja === 'No' ? 'No aplica' : 'Empresa o lugar de trabajo'}
                         />
                       </div>
-                      <div className="md:col-span-3 border-b border-gray-200 my-2"></div>
+                      <div className="md:col-span-4">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia (Inst.)</label>
+                        <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.re_inst_direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 're_inst_direccion', e.target.value)} />
+                      </div>
                     </>
-                  ) : (
-                    <div>
-                      <label className="block text-xs font-bold text-gray-400 mb-1">Representante Institucional</label>
-                      <input
-                        type="text"
-                        className="w-full p-2 border border-gray-200 border-dashed rounded bg-white outline-none text-sm text-gray-400 cursor-not-allowed"
-                        value={estudianteActivo.representanteLegal || ''}
-                        disabled
-                        placeholder="Asignado automático (Rep. Legal)"
-                      />
-                    </div>
                   )}
-
-                  <div className="md:col-span-3">
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia (Estudiante)</label>
-                    <textarea className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" rows="2" value={estudianteActivo.direccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'direccion', e.target.value)}></textarea>
-                  </div>
                 </div>
               </div>
 
@@ -620,28 +629,42 @@ const RegistroAlumnos = () => {
                 <h3 className="text-lg font-black text-[#0F172A] mb-4 border-b pb-2 flex items-center">
                   <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-2">2</span> Datos del Representante Legal
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Cédula de Identidad</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCi} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCi', e.target.value)} />
+                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCi} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCi', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Parentesco</label>
+                    <select className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.repParentesco} onChange={(e) => handleInputChange(estudianteActivo.id, 'repParentesco', e.target.value)}>
+                      <option value="">Seleccione...</option>
+                      <option value="Madre">Madre</option>
+                      <option value="Padre">Padre</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Fecha de Nacimiento</label>
+                    <input type="date" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repFechaNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 'repFechaNacimiento', e.target.value)} />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Fecha y Lugar de Nacimiento</label>
-                    <input type="text" placeholder="Ej: 15/04/1985, Valencia" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repFechaLugarNac} onChange={(e) => handleInputChange(estudianteActivo.id, 'repFechaLugarNac', e.target.value)} />
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Lugar de Nacimiento</label>
+                    <input type="text" placeholder="Ej: Valencia, Carabobo" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repLugarNacimiento} onChange={(e) => handleInputChange(estudianteActivo.id, 'repLugarNacimiento', e.target.value)} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Teléfono</label>
-                    <input type="tel" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repTelefono} onChange={(e) => handleInputChange(estudianteActivo.id, 'repTelefono', e.target.value)} />
+                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repTelefono} onChange={(e) => handleInputChange(estudianteActivo.id, 'repTelefono', e.target.value)} />
                   </div>
+                  
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Correo Electrónico</label>
                     <input type="email" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCorreo} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCorreo', e.target.value)} />
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Grado de Instrucción</label>
                     <select className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.repGradoInstruccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'repGradoInstruccion', e.target.value)}>
@@ -654,18 +677,15 @@ const RegistroAlumnos = () => {
                       <option value="Postgrado">Postgrado</option>
                     </select>
                   </div>
-                  <div className="md:col-span-3">
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repDireccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'repDireccion', e.target.value)} />
-                  </div>
-                  <div>
+                  
+                  <div className="md:col-span-1">
                     <label className="block text-xs font-bold text-gray-600 mb-1">¿Trabaja?</label>
                     <select className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-700" value={estudianteActivo.repTrabaja} onChange={(e) => handleInputChange(estudianteActivo.id, 'repTrabaja', e.target.value)}>
                       <option value="Sí">Sí</option>
                       <option value="No">No</option>
                     </select>
                   </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-3">
                     <label className={`block text-xs font-bold mb-1 ${estudianteActivo.repTrabaja === 'Sí' ? 'text-gray-600' : 'text-gray-400'}`}>¿Dónde trabaja?</label>
                     <input
                       type="text"
@@ -675,6 +695,11 @@ const RegistroAlumnos = () => {
                       disabled={estudianteActivo.repTrabaja === 'No'}
                       placeholder={estudianteActivo.repTrabaja === 'No' ? 'No aplica' : 'Empresa o lugar de trabajo'}
                     />
+                  </div>
+                  
+                  <div className="md:col-span-4">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repDireccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'repDireccion', e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -690,7 +715,7 @@ const RegistroAlumnos = () => {
         </div>
       )}
 
-      {/* MODAL DE LISTADO GENERAL CON BUSCADOR INTEGRADO */}
+      {/* MODAL DE LISTADO GENERAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col border border-gray-200">
@@ -709,7 +734,6 @@ const RegistroAlumnos = () => {
                 </button>
               </div>
 
-              {/* NUEVO: Buscador interno del Modal */}
               <div className="w-full">
                 <input
                   type="text"
@@ -724,13 +748,13 @@ const RegistroAlumnos = () => {
             <div className="p-6 overflow-y-auto bg-white flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                {/* Iteramos sobre el filtro exclusivo del Modal */}
                 {estudiantesFiltradosModal.filter(e => e.nombre.trim() !== "").map((est) => (
                   <div
                     key={est.id}
                     onClick={() => verExpedienteDesdeListado(est.id)}
                     className="p-4 bg-white hover:bg-purple-50/20 border border-gray-200 hover:border-purple-400 rounded-xl shadow-sm flex flex-col gap-1 relative overflow-hidden cursor-pointer transition-all hover:scale-[1.01] active:scale-95 group"
                   >
+                    {/* Al cambiar a texto libre, cualquier valor distinto de "Ninguna" activará esta barrita de alerta */}
                     {est.condicion !== 'Ninguna' && (
                       <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" title={`Condición: ${est.condicion}`}></div>
                     )}
