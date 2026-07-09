@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+// 1. REFACTORIZADO: Importamos la nueva función del módulo externo
+import { generarExcelEstudiantes } from '../components/excelRegistro'; 
 
 const RegistroAlumnos = () => {
   const [estudiantes, setEstudiantes] = useState([]);
@@ -9,8 +11,20 @@ const RegistroAlumnos = () => {
   const [busquedaAcademica, setBusquedaAcademica] = useState("");
   const [dropdownAbiertoId, setDropdownAbiertoId] = useState(null);
   const [busquedaEstudiante, setBusquedaEstudiante] = useState("");
+  const [filtroSeccion, setFiltroSeccion] = useState(""); 
   const [busquedaModal, setBusquedaModal] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
+
+  const [showModalExportar, setShowModalExportar] = useState(false);
+  const [seccionExportar, setSeccionExportar] = useState("");
+  
+  const getPrimerDiaMes = () => {
+    const hoy = new Date();
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const anio = hoy.getFullYear();
+    return `01-${mes}-${anio}`;
+  };
+  const [nombreArchivo, setNombreArchivo] = useState(getPrimerDiaMes());
 
   const opcionesCondicion = ['Ninguna', 'Autismo (TEA)', 'TDAH', 'Dislexia', 'Otra'];
   const opcionesGenero = ['Masculino', 'Femenino'];
@@ -67,11 +81,21 @@ const RegistroAlumnos = () => {
   });
 
   const estudiantesFiltrados = estudiantes.filter(est => {
-    if (!busquedaEstudiante.trim()) return true;
-    const termino = busquedaEstudiante.toLowerCase().trim();
-    const coincideNombre = (est.nombre || '').toLowerCase().includes(termino);
-    const coincideCedula = (est.cedulaEscolar || '').toLowerCase().includes(termino);
-    return coincideNombre || coincideCedula;
+    let pasaFiltroTexto = true;
+    if (busquedaEstudiante.trim()) {
+      const termino = busquedaEstudiante.toLowerCase().trim();
+      const coincideNombre = (est.nombre || '').toLowerCase().includes(termino);
+      const coincideCedula = (est.cedulaEscolar || '').toLowerCase().includes(termino);
+      pasaFiltroTexto = coincideNombre || coincideCedula;
+    }
+
+    let pasaFiltroSeccion = true;
+    if (filtroSeccion) {
+      const idSeccionEstudiante = `${est.turno}-${est.nivelEstudio}-${est.seccion}`.toLowerCase().replace(/ /g, '_');
+      pasaFiltroSeccion = idSeccionEstudiante === filtroSeccion;
+    }
+
+    return pasaFiltroTexto && pasaFiltroSeccion;
   });
 
   const estudiantesFiltradosModal = estudiantes.filter(est => {
@@ -234,6 +258,14 @@ const RegistroAlumnos = () => {
     }
   };
 
+  // 2. CONECTADO: Ejecutamos el helper de excel y cerramos el modal si todo sale bien
+  const exportarAExcel = () => {
+    const descargado = generarExcelEstudiantes(estudiantes, seccionExportar, nombreArchivo, getPrimerDiaMes());
+    if (descargado) {
+      setShowModalExportar(false);
+    }
+  };
+
   const estudianteActivo = estudiantes.find(est => est.id === estudianteActivoId);
 
   return (
@@ -262,11 +294,22 @@ const RegistroAlumnos = () => {
             </button>
 
             <button onClick={() => setShowModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center">
-              📊 Ver Listado General
+              📊 Ver Listado
+            </button>
+
+            <button 
+              onClick={() => {
+                setNombreArchivo(getPrimerDiaMes());
+                setSeccionExportar("");
+                setShowModalExportar(true);
+              }} 
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95"
+            >
+              📗 Exportar Excel
             </button>
 
             <Link to="/" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:shadow transition-all flex items-center shadow-sm">
-              🏠 Volver al Inicio
+              🏠 Volver Inicio
             </Link>
 
             <button onClick={guardarDatos} className="bg-purple-600 hover:bg-purple-800 text-white px-6 py-2 rounded-md font-bold shadow-md transition-all active:scale-95">
@@ -275,22 +318,40 @@ const RegistroAlumnos = () => {
           </div>
         </header>
 
+        {/* CONTENEDOR DE LA TABLA MATRÍCULA */}
         <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 bg-white border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="p-4 bg-white border-b border-gray-200 flex flex-col lg:flex-row justify-between items-center gap-4">
             <h2 className="font-bold text-gray-700 whitespace-nowrap">Matrícula Actual</h2>
             
-            <div className="w-full sm:max-w-md">
+            <div className="w-full flex flex-col sm:flex-row gap-2 lg:justify-end">
+              <select
+                className="w-full sm:w-auto p-2 border border-gray-300 rounded-lg outline-none focus:border-purple-500 text-sm bg-white"
+                value={filtroSeccion}
+                onChange={(e) => setFiltroSeccion(e.target.value)}
+              >
+                <option value="">🏫 Todas las secciones</option>
+                {opcionesAcademicas.map(opt => (
+                  <option key={`filtro-${opt.id}`} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+
               <input
                 type="text"
                 placeholder="🔍 Buscar por nombre o cédula escolar..."
-                className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-purple-500 text-sm bg-white"
+                className="w-full sm:w-64 p-2 border border-gray-300 rounded-lg outline-none focus:border-purple-500 text-sm bg-white"
                 value={busquedaEstudiante}
                 onChange={(e) => setBusquedaEstudiante(e.target.value)}
               />
             </div>
 
-            <button onClick={agregarFila} className="bg-purple-50 text-purple-700 hover:bg-purple-100 px-4 py-2 rounded-lg font-bold flex items-center text-sm transition-colors shadow-sm border border-purple-200 whitespace-nowrap">
-              <span className="text-xl mr-2 leading-none">+</span> Añadir Nuevo Estudiante
+            <button 
+              onClick={agregarFila} 
+              disabled={!modoEdicion}
+              className={`px-4 py-2 rounded-lg font-bold flex items-center text-sm transition-colors shadow-sm border whitespace-nowrap ${modoEdicion ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'}`}
+            >
+              <span className="text-xl mr-2 leading-none">+</span> Añadir Estudiante
             </button>
           </div>
 
@@ -315,29 +376,31 @@ const RegistroAlumnos = () => {
                   return (
                     <div key={est.id} className="grid grid-cols-[2fr_0.5fr_0.9fr_1.5fr_3fr_1.5fr_1.2fr_0.6fr] hover:bg-purple-50/20 bg-white transition-colors items-center p-2">
                       <div className="px-2">
-                        <input type="text" placeholder="Nombre completo" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none font-medium text-sm text-gray-800" value={est.nombre} onChange={(e) => handleInputChange(est.id, 'nombre', e.target.value)} />
+                        <input type="text" disabled={!modoEdicion} placeholder="Nombre completo" className={`w-full p-2 bg-transparent rounded border border-transparent outline-none font-medium text-sm text-gray-800 ${modoEdicion ? 'focus:border-purple-400' : 'cursor-not-allowed opacity-75'}`} value={est.nombre} onChange={(e) => handleInputChange(est.id, 'nombre', e.target.value)} />
                       </div>
                       <div className="px-2 text-center">
-                        <input type="text" inputMode="numeric" placeholder="0" className="w-full p-2 bg-transparent border border-transparent rounded text-center focus:border-purple-400 outline-none font-bold text-sm text-gray-800" value={est.edad || ''} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
+                        <input type="text" disabled={!modoEdicion} inputMode="numeric" placeholder="0" className={`w-full p-2 bg-transparent border border-transparent rounded text-center outline-none font-bold text-sm text-gray-800 ${modoEdicion ? 'focus:border-purple-400' : 'cursor-not-allowed opacity-75'}`} value={est.edad || ''} onChange={(e) => handleInputChange(est.id, 'edad', e.target.value)} />
                       </div>
                       <div className="px-2">
-                        <select className="w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-semibold text-gray-700 text-sm cursor-pointer" value={est.genero} onChange={(e) => handleInputChange(est.id, 'genero', e.target.value)}>
+                        <select disabled={!modoEdicion} className={`w-full p-2 bg-transparent border border-transparent rounded outline-none font-semibold text-gray-700 text-sm ${modoEdicion ? 'focus:border-purple-400 cursor-pointer' : 'cursor-not-allowed opacity-75'}`} value={est.genero} onChange={(e) => handleInputChange(est.id, 'genero', e.target.value)}>
                           <option value="">Seleccione...</option>
                           {opcionesGenero.map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
                       </div>
                       <div className="px-2">
-                        <input type="text" placeholder="Dirección" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.direccion} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
+                        <input type="text" disabled={!modoEdicion} placeholder="Dirección" className={`w-full p-2 bg-transparent rounded border border-transparent outline-none text-sm text-gray-800 ${modoEdicion ? 'focus:border-purple-400' : 'cursor-not-allowed opacity-75'}`} value={est.direccion} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
                       </div>
 
                       <div className="px-2 relative">
-                        <div className="flex items-center justify-between p-2 border border-gray-200 rounded bg-white focus-within:border-purple-400">
+                        <div className={`flex items-center justify-between p-2 border rounded bg-white ${modoEdicion ? 'border-gray-200 focus-within:border-purple-400' : 'border-transparent opacity-75'}`}>
                           <input
                             type="text"
-                            className="w-full bg-transparent outline-none font-semibold text-gray-700 text-sm"
+                            className={`w-full bg-transparent outline-none font-semibold text-gray-700 text-sm ${!modoEdicion ? 'cursor-not-allowed' : ''}`}
                             placeholder="Buscar turno o nivel..."
                             value={esDropdownAbierto ? busquedaAcademica : textoAsignacionActual}
+                            disabled={!modoEdicion}
                             onFocus={() => {
+                              if(!modoEdicion) return;
                               setDropdownAbiertoId(est.id);
                               setBusquedaAcademica("");
                             }}
@@ -346,7 +409,7 @@ const RegistroAlumnos = () => {
                           <span className="text-gray-400 text-xs ml-1 pointer-events-none">▼</span>
                         </div>
 
-                        {esDropdownAbierto && (
+                        {esDropdownAbierto && modoEdicion && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setDropdownAbiertoId(null)}></div>
                             <div className="absolute left-2 right-2 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-gray-50">
@@ -364,12 +427,13 @@ const RegistroAlumnos = () => {
                       </div>
 
                       <div className="px-2">
-                        <input type="text" placeholder="Nombre representante" className="w-full p-2 bg-transparent rounded border border-transparent focus:border-purple-400 outline-none text-sm text-gray-800" value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
+                        <input type="text" disabled={!modoEdicion} placeholder="Nombre representante" className={`w-full p-2 bg-transparent rounded border border-transparent outline-none text-sm text-gray-800 ${modoEdicion ? 'focus:border-purple-400' : 'cursor-not-allowed opacity-75'}`} value={est.repNombre} onChange={(e) => handleInputChange(est.id, 'repNombre', e.target.value)} />
                       </div>
 
                       <div className="px-2 text-center">
                         <select 
-                          className={`w-full p-2 bg-transparent border border-transparent rounded focus:border-purple-400 outline-none font-bold text-xs cursor-pointer text-center ${est.estado === 'Retirado' ? 'text-red-600' : 'text-green-600'}`}
+                          disabled={!modoEdicion}
+                          className={`w-full p-2 bg-transparent border border-transparent rounded outline-none font-bold text-xs text-center ${modoEdicion ? 'focus:border-purple-400 cursor-pointer' : 'cursor-not-allowed opacity-75'} ${est.estado === 'Retirado' ? 'text-red-600' : 'text-green-600'}`}
                           value={est.estado || 'Vigente'} 
                           onChange={(e) => handleInputChange(est.id, 'estado', e.target.value)}
                         >
@@ -399,12 +463,12 @@ const RegistroAlumnos = () => {
 
                 {estudiantes.length === 0 && (
                   <div className="col-span-8 p-8 text-center text-gray-400 font-medium bg-white">
-                    No hay estudiantes registrados. Haz clic en "Añadir Nuevo Estudiante" para comenzar.
+                    No hay estudiantes registrados. Haz clic en "Gestionar Matrícula" y luego en "Añadir Estudiante" para comenzar.
                   </div>
                 )}
                 {estudiantes.length > 0 && estudiantesFiltrados.length === 0 && (
                   <div className="col-span-8 p-8 text-center text-gray-400 font-medium bg-white">
-                    No se encontraron coincidencias para "{busquedaEstudiante}".
+                    No se encontraron coincidencias para los filtros aplicados.
                   </div>
                 )}
               </div>
@@ -429,7 +493,6 @@ const RegistroAlumnos = () => {
             </div>
 
             <div className="p-6 overflow-y-auto bg-white">
-
               <div className="mb-8 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="text-lg font-black text-[#0F172A] mb-4 border-b pb-2 flex items-center">
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">1</span> Datos del Estudiante
@@ -483,7 +546,6 @@ const RegistroAlumnos = () => {
                     <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.tallaCalzado} onChange={(e) => handleInputChange(estudianteActivo.id, 'tallaCalzado', e.target.value)} placeholder="Ej. 32" />
                   </div>
 
-                  {/* AQUÍ ESTÁ EL CAMBIO PARA LA NEURODIVERGENCIA */}
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Condición (Neurodiversidad)</label>
                     <input 
@@ -625,6 +687,7 @@ const RegistroAlumnos = () => {
                 </div>
               </div>
 
+              {/* SECCIÓN REPRESENTANTE LEGAL */}
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="text-lg font-black text-[#0F172A] mb-4 border-b pb-2 flex items-center">
                   <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm mr-2">2</span> Datos del Representante Legal
@@ -703,9 +766,7 @@ const RegistroAlumnos = () => {
                   </div>
                 </div>
               </div>
-
             </div>
-
             <div className="p-4 border-t border-gray-200 bg-white flex justify-end rounded-b-2xl">
               <button onClick={cerrarExpediente} className="bg-[#002366] hover:bg-blue-900 text-white px-8 py-2 rounded-lg font-bold transition-colors shadow-md">
                 Guardar Localmente y Cerrar
@@ -747,14 +808,12 @@ const RegistroAlumnos = () => {
 
             <div className="p-6 overflow-y-auto bg-white flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
                 {estudiantesFiltradosModal.filter(e => e.nombre.trim() !== "").map((est) => (
                   <div
                     key={est.id}
                     onClick={() => verExpedienteDesdeListado(est.id)}
                     className="p-4 bg-white hover:bg-purple-50/20 border border-gray-200 hover:border-purple-400 rounded-xl shadow-sm flex flex-col gap-1 relative overflow-hidden cursor-pointer transition-all hover:scale-[1.01] active:scale-95 group"
                   >
-                    {/* Al cambiar a texto libre, cualquier valor distinto de "Ninguna" activará esta barrita de alerta */}
                     {est.condicion !== 'Ninguna' && (
                       <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" title={`Condición: ${est.condicion}`}></div>
                     )}
@@ -797,6 +856,71 @@ const RegistroAlumnos = () => {
                 className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-md"
               >
                 Cerrar Listado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA EXPORTAR A EXCEL */}
+      {showModalExportar && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-gray-200">
+            
+            <div className="p-5 border-b flex justify-between items-center bg-green-700 text-white">
+              <h2 className="text-xl font-bold flex items-center">
+                <span className="mr-2">📗</span> Exportar a Excel
+              </h2>
+              <button onClick={() => setShowModalExportar(false)} className="text-white hover:text-green-200 text-2xl leading-none">&times;</button>
+            </div>
+
+            <div className="p-6 bg-white flex flex-col gap-4">
+              <p className="text-sm text-gray-600 mb-2">Configura los detalles del archivo Excel que vas a descargar.</p>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre del archivo</label>
+                <div className="flex items-center border border-gray-300 rounded focus-within:border-green-500 bg-white p-2">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent outline-none text-sm text-gray-800"
+                    placeholder="Ej. estudiantes_matricula"
+                    value={nombreArchivo}
+                    onChange={(e) => setNombreArchivo(e.target.value)}
+                  />
+                  <span className="text-gray-400 text-sm font-medium ml-2">.xlsx</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Por defecto: Fecha actual ({getPrimerDiaMes()})</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Seleccionar Sección</label>
+                <select
+                  className="w-full p-2 border border-gray-300 rounded outline-none focus:border-green-500 text-sm bg-white text-gray-700"
+                  value={seccionExportar}
+                  onChange={(e) => setSeccionExportar(e.target.value)}
+                >
+                  <option value="">🏫 Exportar todas las secciones (Toda la matrícula)</option>
+                  {opcionesAcademicas.map(opt => (
+                    <option key={`export-${opt.id}`} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
+              <button 
+                onClick={() => setShowModalExportar(false)} 
+                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={exportarAExcel} 
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-md flex items-center"
+              >
+                Descargar Archivo ⬇️
               </button>
             </div>
           </div>
