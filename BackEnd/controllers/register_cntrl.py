@@ -18,8 +18,6 @@ class AcademicController:
             # 1) Extracción y Validación de Cédulas (Claves Primarias)
             # ---------------------------------------------------------
             rep_ci = to_int_optional(data.get('repCi'))
-            
-            # Si el usuario no especificó otra cédula institucional, usa por defecto la legal
             re_inst_ci = to_int_optional(data.get('re_inst_ci')) or rep_ci
             est_ci = to_int_optional(data.get('cedulaEscolar'))
 
@@ -35,8 +33,8 @@ class AcademicController:
                 INSERT OR REPLACE INTO representante (
                     representante_ci, nombre, direccion, fecha_nacimiento,
                     grado_educacion, trabaja, direccion_trabajo,
-                    parentesco, lugar_nacimiento
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    parentesco, lugar_nacimiento, telefono, correo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 rep_ci,
                 data.get('repNombre') or data.get('representanteLegal') or 'Sin Nombre',
@@ -46,7 +44,9 @@ class AcademicController:
                 trabaja_rep,
                 data.get('repDondeTrabaja') if trabaja_rep == 1 else None,
                 data.get('repParentesco') or 'Representante Legal',
-                data.get('repLugarNacimiento') or ''
+                data.get('repLugarNacimiento') or '',
+                data.get('repTelefono') or '',
+                data.get('repCorreo') or ''
             ))
             
             # ---------------------------------------------------------
@@ -54,14 +54,12 @@ class AcademicController:
             # ---------------------------------------------------------
             trabaja_inst = 1 if str(data.get('re_inst_trabaja')).lower() in ('sí', 'si', '1', 'true') else 0
             
-            # Nota: Si en el frontend no se activó el formulario extra, aquí
-            # llegarán exactamente los mismos datos duplicados del rep. legal.
             cursor.execute("""
                 INSERT OR REPLACE INTO rep_responsable (
                     re_inst_ci, nombre, direccion, fecha_nacimiento,
                     grado_educacion, trabaja, direccion_trabajo,
-                    parentesco, lugar_nacimiento
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    parentesco, lugar_nacimiento, telefono, correo
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 re_inst_ci,
                 data.get('representanteInstitucional') or data.get('repNombre') or 'Sin Nombre',
@@ -71,7 +69,9 @@ class AcademicController:
                 trabaja_inst,
                 data.get('re_inst_dondeTrabaja') if trabaja_inst == 1 else None,
                 data.get('re_inst_parentesco') or data.get('repParentesco') or 'Institucional',
-                data.get('re_inst_lugarNacimiento') or data.get('repLugarNacimiento') or ''
+                data.get('re_inst_lugarNacimiento') or data.get('repLugarNacimiento') or '',
+                data.get('re_inst_telefono') or data.get('repTelefono') or '',
+                data.get('re_inst_correo') or data.get('repCorreo') or ''
             ))
 
             # ---------------------------------------------------------
@@ -127,5 +127,99 @@ class AcademicController:
             conn.rollback()
             print(f"❌ ERROR CRÍTICO EN BACKEND: {e}")
             return {"status": "error", "message": str(e)}
+        finally:
+            conn.close()
+
+    # ---------------------------------------------------------
+    # CORREGIDO: Lectura completa de todos los datos relacionales
+    # ---------------------------------------------------------
+    def obtener_estudiantes(self):
+        conn = sqlite3.connect(self.db_path)
+        # Usar Row factory permite acceder a las columnas por su nombre sin errores de índice
+        conn.row_factory = sqlite3.Row 
+        cursor = conn.cursor()
+        try:
+            query = """
+                SELECT 
+                    e.cedula_estudiantil, e.est_nombre, e.est_direccion, e.est_genero,
+                    e.neurodiversidad, e.est_fecha_nacimiento, e.tipo_sangre,
+                    e.talla_mono, e.talla_camisa, e.talla_calzado, e.re_inst_ci,
+                    s.grado, s.turno, s.seccion,
+                    
+                    r.representante_ci, r.nombre as rep_nombre, r.telefono as rep_tlf, 
+                    r.correo as rep_correo, r.direccion as rep_dir, r.fecha_nacimiento as rep_fnac, 
+                    r.parentesco as rep_par, r.lugar_nacimiento as rep_lnac, 
+                    r.grado_educacion as rep_grado, r.trabaja as rep_trab, r.direccion_trabajo as rep_dir_trab,
+                    
+                    ri.re_inst_ci as inst_ci, ri.nombre as inst_nombre, ri.telefono as inst_tlf, 
+                    ri.correo as inst_correo, ri.direccion as inst_dir, ri.fecha_nacimiento as inst_fnac, 
+                    ri.parentesco as inst_par, ri.lugar_nacimiento as inst_lnac, 
+                    ri.grado_educacion as inst_grado, ri.trabaja as inst_trab, ri.direccion_trabajo as inst_dir_trab
+                    
+                FROM Estudiante e
+                LEFT JOIN salones s ON e.salon_id = s.salon_id
+                LEFT JOIN representante r ON e.representante_ci = r.representante_ci
+                LEFT JOIN rep_responsable ri ON e.re_inst_ci = ri.re_inst_ci
+            """
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            
+            estudiantes_formateados = []
+            for row in rows:
+                rep_ci = str(row['representante_ci'] or "")
+                inst_ci = str(row['inst_ci'] or "")
+                
+                # Determinamos si tiene representante institucional separado
+                tiene_inst = True if (inst_ci and inst_ci != rep_ci) else False
+
+                estudiantes_formateados.append({
+                    "id": str(row['cedula_estudiantil']), 
+                    "cedulaEscolar": str(row['cedula_estudiantil']),
+                    "nombre": row['est_nombre'] or "",
+                    "direccion": row['est_direccion'] or "",
+                    "genero": row['est_genero'] or "",
+                    "condicion": row['neurodiversidad'] or "Ninguna",
+                    "fechaNacimiento": row['est_fecha_nacimiento'] or "",
+                    "tipoSangre": row['tipo_sangre'] or "",
+                    "tallaMono": str(row['talla_mono'] or ""),
+                    "tallaCamisa": str(row['talla_camisa'] or ""),
+                    "tallaCalzado": str(row['talla_calzado'] or ""),
+                    "nivelEstudio": row['grado'] or "",
+                    "turno": row['turno'] or "",
+                    "seccion": row['seccion'] or "",
+                    "estado": "Vigente",
+                    "edad": "",
+                    
+                    # --- DATOS DEL REPRESENTANTE LEGAL COMPLETOS ---
+                    "repCi": rep_ci,
+                    "repNombre": row['rep_nombre'] or "",
+                    "repTelefono": row['rep_tlf'] or "",
+                    "repCorreo": row['rep_correo'] or "",
+                    "repDireccion": row['rep_dir'] or "",
+                    "repFechaNacimiento": row['rep_fnac'] or "",
+                    "repParentesco": row['rep_par'] or "",
+                    "repLugarNacimiento": row['rep_lnac'] or "",
+                    "repGradoInstruccion": row['rep_grado'] or "",
+                    "repTrabaja": "Sí" if row['rep_trab'] == 1 else "No",
+                    "repDondeTrabaja": row['rep_dir_trab'] or "",
+                    
+                    # --- DATOS DEL REPRESENTANTE INSTITUCIONAL ---
+                    "tieneRepInstitucional": tiene_inst,
+                    "re_inst_ci": inst_ci,
+                    "representanteInstitucional": row['inst_nombre'] or "",
+                    "re_inst_telefono": row['inst_tlf'] or "",
+                    "re_inst_correo": row['inst_correo'] or "",
+                    "re_inst_direccion": row['inst_dir'] or "",
+                    "re_inst_fechaNacimiento": row['inst_fnac'] or "",
+                    "re_inst_parentesco": row['inst_par'] or "",
+                    "re_inst_lugarNacimiento": row['inst_lnac'] or "",
+                    "re_inst_gradoInstruccion": row['inst_grado'] or "",
+                    "re_inst_trabaja": "Sí" if row['inst_trab'] == 1 else "No",
+                    "re_inst_dondeTrabaja": row['inst_dir_trab'] or ""
+                })
+            return estudiantes_formateados
+        except Exception as e:
+            print(f"❌ Error al consultar estudiantes para el frontend: {e}")
+            return []
         finally:
             conn.close()

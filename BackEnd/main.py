@@ -7,43 +7,68 @@ from controllers.personal_cntrl import PersonalController
 from controllers.inventario_cntrl import InventarioController
 
 def inicializar_base_de_datos(db_path):
-    """
-    Verifica si la base de datos y sus directorios existen.
-    Si no existen, crea la estructura de carpetas y ejecuta el esquema DDL completo
-    requerido por todos los controladores del sistema.
-    """
-    # 1. Asegurar que el directorio de la base de datos exista
     db_dir = os.path.dirname(db_path)
     if not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
         print(f"📁 Directorio creado: {db_dir}")
 
-    # 2. Conectar y crear tablas solo si es necesario
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
-    # Habilitar estricto cumplimiento de claves foráneas
     conn.execute("PRAGMA foreign_keys = ON;")
 
-    # 3. Esquema SQL consolidado para todo el sistema
     esquema_sql = """
-    -- =========================================================
-    -- MÓDULO ACADÉMICO Y ESTUDIANTIL (AcademicController / Asis_Det_Controller)
-    -- =========================================================
-    
     CREATE TABLE IF NOT EXISTS salones (
         salon_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        grado TEXT NOT NULL,          -- Ej: 'Maternal', '1er Nivel'
-        turno TEXT NOT NULL,          -- Ej: 'Mañana', 'Tarde'
-        seccion TEXT NOT NULL         -- Ej: 'A', 'B'
+        grado TEXT NOT NULL,
+        turno TEXT NOT NULL,
+        seccion TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS representante (
+        representante_ci INTEGER PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        direccion TEXT,
+        fecha_nacimiento TEXT,
+        grado_educacion TEXT,
+        trabaja INTEGER,
+        direccion_trabajo TEXT,
+        parentesco TEXT,
+        lugar_nacimiento TEXT,
+        telefono TEXT,
+        correo TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS rep_responsable (
+        re_inst_ci INTEGER PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        direccion TEXT,
+        fecha_nacimiento TEXT,
+        grado_educacion TEXT,
+        trabaja INTEGER,
+        direccion_trabajo TEXT,
+        parentesco TEXT,
+        lugar_nacimiento TEXT,
+        telefono TEXT,
+        correo TEXT
     );
 
     CREATE TABLE IF NOT EXISTS Estudiante (
         cedula_estudiantil INTEGER PRIMARY KEY,
         est_nombre TEXT NOT NULL,
-        est_genero TEXT NOT NULL,     -- 'Masculino' o 'Femenino'
+        est_direccion TEXT,
+        est_genero TEXT NOT NULL,
+        neurodiversidad TEXT,
+        est_fecha_nacimiento TEXT,
+        re_inst_ci INTEGER,
+        representante_ci INTEGER,
         salon_id INTEGER NOT NULL,
-        FOREIGN KEY (salon_id) REFERENCES salones(salon_id) ON DELETE RESTRICT
+        tipo_sangre TEXT,
+        talla_mono TEXT,
+        talla_camisa TEXT,
+        talla_calzado TEXT,
+        FOREIGN KEY (salon_id) REFERENCES salones(salon_id) ON DELETE RESTRICT,
+        FOREIGN KEY (representante_ci) REFERENCES representante(representante_ci) ON DELETE SET NULL,
+        FOREIGN KEY (re_inst_ci) REFERENCES rep_responsable(re_inst_ci) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS asistencias (
@@ -52,21 +77,17 @@ def inicializar_base_de_datos(db_path):
         mes TEXT NOT NULL,
         semana TEXT NOT NULL,
         dia_semana TEXT NOT NULL,
-        estado TEXT NOT NULL,         -- 'Presente' o 'Ausente'
-        FOREIGN KEY (cedula_estudiantil) REFERENCES Estudiante(cedula_estudiantil) ON DELETE CASCADE,
-        UNIQUE(cedula_estudiantil, mes, semana, dia_semana)
+        estado TEXT NOT NULL,
+        UNIQUE(cedula_estudiantil, mes, semana, dia_semana),
+        FOREIGN KEY (cedula_estudiantil) REFERENCES Estudiante(cedula_estudiantil) ON DELETE CASCADE
     );
 
-    -- =========================================================
-    -- MÓDULO DE RECURSOS HUMANOS (PersonalController)
-    -- =========================================================
-
-    CREATE TABLE IF NOT EXISTS personal (
+        CREATE TABLE IF NOT EXISTS personal (
         cedula_trabajador INTEGER PRIMARY KEY,
         nombre TEXT NOT NULL,
         cargo TEXT NOT NULL,
-        turno TEXT NOT NULL,
-        horas_administrativas INTEGER NOT NULL DEFAULT 0
+        turno TEXT,
+        horas_administrativas INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS asistencias_personal (
@@ -75,29 +96,45 @@ def inicializar_base_de_datos(db_path):
         mes TEXT NOT NULL,
         semana TEXT NOT NULL,
         dia_semana TEXT NOT NULL,
-        estado TEXT NOT NULL,         -- 'Presente' o 'Ausente'
-        FOREIGN KEY (cedula_trabajador) REFERENCES personal(cedula_trabajador) ON DELETE CASCADE,
-        UNIQUE(cedula_trabajador, mes, semana, dia_semana)
+        estado TEXT NOT NULL,
+        FOREIGN KEY (cedula_trabajador) REFERENCES personal(cedula_trabajador) ON DELETE CASCADE
     );
-
-    --- MODULO DE INVENTARIO
 
     CREATE TABLE IF NOT EXISTS inventario_mobiliario (
         mobiliario_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL,
-        cantidad INTEGER NOT NULL CHECK(cantidad >= 0),
-        activo TEXT NOT NULL DEFAULT 'En uso',
-        comentario TEXT
+        codigo_bien TEXT UNIQUE,
+        cantidad INTEGER DEFAULT 0,
+        activo TEXT,
+        comentarios TEXT
     );
-
     """
-    
+
     try:
         cursor.executescript(esquema_sql)
+        cursor.execute("SELECT COUNT(*) FROM salones")
+        if cursor.fetchone()[0] == 0:
+            print("🏫 Tabla 'salones' vacía. Precargando la configuración institucional...")
+            salones_iniciales = [
+                ('Maternal', 'Mañana', 'A'), ('Maternal', 'Tarde', 'B'),
+                ('1er Nivel', 'Mañana', 'A'), ('1er Nivel', 'Mañana', 'B'),
+                ('1er Nivel', 'Tarde', 'C'), ('1er Nivel', 'Tarde', 'D'),
+                ('2do Nivel', 'Mañana', 'A'), ('2do Nivel', 'Mañana', 'B'),
+                ('2do Nivel', 'Tarde', 'C'), ('2do Nivel', 'Tarde', 'D'),
+                ('3er Nivel', 'Mañana', 'A'), ('3er Nivel', 'Tarde', 'B'), ('3er Nivel', 'Tarde', 'C')
+            ]
+            cursor.executemany(
+                "INSERT INTO salones (grado, turno, seccion) VALUES (?, ?, ?)", 
+                salones_iniciales
+            )
+            print(f"✅ Se han registrado {len(salones_iniciales)} aulas correctamente.")
+
         conn.commit()
-        print("✅ Estructura de base de datos verificada/creada exitosamente.")
+        print("✅ Estructura de base de datos verificada y sincronizada con los controladores.")
+        
     except Exception as e:
-        print(f"❌ Error crítico al inicializar la base de datos: {e}")
+        conn.rollback()
+        print(f"❌ Error al inicializar las tablas en main.py: {e}")
     finally:
         conn.close()
 
@@ -107,7 +144,6 @@ class SistemaAPI:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.db_path = os.path.join(base_dir, "database", "data", "Control_Estudiantil.db")
         
-        # 🚀 AUTO-INIT: Ejecutar la verificación antes de instanciar los controladores
         inicializar_base_de_datos(self.db_path)
         
         self.controlador_academico = AcademicController(self.db_path)
@@ -120,6 +156,10 @@ class SistemaAPI:
     # =========================================================
     def registrar_estudiante_completo(self, data):
         return self.controlador_academico.registrar_estudiante_completo(data)
+
+    # NUEVO PUENTE: Permite al frontend pedir la lista al recargar
+    def obtener_estudiantes(self):
+        return self.controlador_academico.obtener_estudiantes()
 
     def cargar_matriz_asistencia(self, parametros):
         return self.controlador_asistencia.cargar_matriz_asistencia(parametros)
@@ -134,29 +174,24 @@ class SistemaAPI:
     # PUENTES PARA EL PERSONAL
     # =========================================================
     def registrar_trabajador(self, data):
-        """Permite guardar un nuevo empleado desde el formulario en React"""
         return self.controlador_personal.registrar_trabajador(data)
 
     def cargar_matriz_asistencia_personal(self, parametros):
-        """Carga la lista de empleados en la interfaz de asistencia"""
         return self.controlador_personal.cargar_matriz_asistencia_personal(parametros)
 
     def guardar_asistencias_personal(self, data):
-        """Guarda el pase de lista del personal ejecutado en React"""
         return self.controlador_personal.guardar_asistencias_personal(data)
     
-    # PUENTE PARA EL INVENTARIO
-    
+    # =========================================================
+    # PUENTES PARA EL INVENTARIO
+    # =========================================================
     def cargar_inventario(self):
-        """Devuelve la lista completa de bienes registrados en SQLite"""
         return self.controlador_inventario.cargar_inventario()
 
     def guardar_inventario_masivo(self, lista_bienes):
-        """Inserta o actualiza lotes de mobiliario en SQLite"""
         return self.controlador_inventario.guardar_inventario_masivo(lista_bienes)
 
     def eliminar_articulo_inventario(self, id_articulo):
-        """Elimina un bien de manera permanente por su ID"""
         return self.controlador_inventario.eliminar_articulo(id_articulo)
 
 
