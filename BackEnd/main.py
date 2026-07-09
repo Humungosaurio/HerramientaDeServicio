@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import webview
+import openpyxl
 from controllers.register_cntrl import AcademicController
 from controllers.asis_det_cntrl import Asis_Det_Controller
 from controllers.personal_cntrl import PersonalController
@@ -193,8 +194,129 @@ class SistemaAPI:
 
     def eliminar_articulo_inventario(self, id_articulo):
         return self.controlador_inventario.eliminar_articulo(id_articulo)
+    def generar_excel_desde_plantilla(self, datos_estudiantes, nombre_archivo):
+        try:
+            ruta_plantilla = os.path.join(os.path.dirname(__file__), "plantilla_matricula.xlsx")
+            
+            if not os.path.exists(ruta_plantilla):
+                return {"status": "error", "message": "No se encontró el archivo plantilla_matricula.xlsx en el backend."}
 
+            window = webview.windows[0]
+            result = window.create_file_dialog(
+                webview.SAVE_DIALOG,
+                directory='',
+                save_filename=f"{nombre_archivo}.xlsx",
+                file_types=('Archivos Excel (*.xlsx)', 'Todos los archivos (*.*)')
+            )
 
+            if not result:
+                return {"status": "cancelado"}
+
+            ruta_guardado = result[0]
+
+            # Cargar plantilla preservando imágenes (Pillow requerido)
+            wb = openpyxl.load_workbook(ruta_plantilla)
+            ws = wb.active
+
+            # =========================================================
+            # FUNCIÓN AUXILIAR PARA CELDAS COMBINADAS
+            # =========================================================
+            def escribir_celda_segura(fila, col, valor):
+                try:
+                    ws.cell(row=fila, column=col, value=valor)
+                except AttributeError:
+                    celda = ws.cell(row=fila, column=col)
+                    for rango in ws.merged_cells.ranges:
+                        if celda.coordinate in rango:
+                            ws.cell(row=rango.min_row, column=rango.min_col, value=valor)
+                            break
+
+            # =========================================================
+            # COORDENADAS EXACTAS DEL FORMATO DEA RR-DEA-07-04
+            # =========================================================
+            fila_superior = 18 # Fila donde inicia el estudiante Nº 01 en la tabla superior
+            fila_inferior = 40 # Fila donde inicia el estudiante Nº 01 en la tabla inferior
+
+            for i, est in enumerate(datos_estudiantes):
+                # -------------------------------------------------------------
+                # 1. BLOQUE SUPERIOR (Cédula, Lugar, Sexo, Fecha - Fila 18+)
+                # -------------------------------------------------------------
+                # Columna A (1): Nº de lista
+                escribir_celda_segura(fila_superior, 1, i + 1)
+                
+                # Columna B (2): Cédula de Identidad o Cédula Escolar
+                cedula = est.get('cedulaEscolar') or est.get('cedula_estudiantil') or ''
+                escribir_celda_segura(fila_superior, 2, cedula)
+                
+                # Columna E (5): Lugar de Nacimiento
+                lugar_nac = est.get('lugarNacimiento') or est.get('lugar_nacimiento') or ''
+                escribir_celda_segura(fila_superior, 5, str(lugar_nac).upper())
+
+                # Columna J (10): Entidad Federal (EF) - Ej: CARABOBO
+                ef = est.get('entidadFederal') or est.get('ef') or est.get('est_ef') or ''
+                escribir_celda_segura(fila_superior, 10, str(ef).upper())
+
+                # Columna K (11): Sexo (M o F)
+                genero = est.get('genero') or est.get('est_genero') or ''
+                escribir_celda_segura(fila_superior, 11, genero[0].upper() if genero else '')
+
+                # Columna L (12), M (13), N (14): Fecha de Nacimiento (Día, Mes, Año)
+                fecha_nac = est.get('fechaNacimiento') or est.get('est_fecha_nacimiento') or ''
+                if fecha_nac:
+                    sep = '-' if '-' in fecha_nac else '/'
+                    partes = fecha_nac.split(sep)
+                    if len(partes) == 3:
+                        # Detecta si viene YYYY-MM-DD y lo ordena a Día, Mes, Año
+                        if len(partes[0]) == 4: 
+                            dia, mes, anio = partes[2], partes[1], partes[0]
+                        else:
+                            dia, mes, anio = partes[0], partes[1], partes[2]
+                            
+                        escribir_celda_segura(fila_superior, 12, dia)  # Columna L: Día
+                        escribir_celda_segura(fila_superior, 13, mes)  # Columna M: Mes
+                        escribir_celda_segura(fila_superior, 14, anio) # Columna N: Año
+
+                # -------------------------------------------------------------
+                # 2. BLOQUE INFERIOR (Apellidos y Nombres - Fila 40+)
+                # -------------------------------------------------------------
+                # Columna A (1): Nº de lista en tabla inferior
+                escribir_celda_segura(fila_inferior, 1, i + 1)
+                
+                # Lógica para separar Apellidos y Nombres si vienen juntos en 'nombre'
+                apellidos = est.get('apellidos', '')
+                nombres = est.get('nombres', '')
+                
+                if not apellidos and not nombres:
+                    nombre_completo = str(est.get('nombre') or est.get('est_nombre') or '').strip().upper()
+                    partes_nombre = nombre_completo.split()
+                    
+                    if len(partes_nombre) >= 3:
+                        # Asume 2 apellidos y el resto son nombres (Ej: PÉREZ GONZÁLEZ JUAN CARLOS)
+                        apellidos = " ".join(partes_nombre[:2])
+                        nombres = " ".join(partes_nombre[2:])
+                    elif len(partes_nombre) == 2:
+                        apellidos = partes_nombre[0]
+                        nombres = partes_nombre[1]
+                    else:
+                        apellidos = nombre_completo
+                        nombres = ""
+
+                # Columna B (2): Apellidos (ocupa de B hasta J)
+                escribir_celda_segura(fila_inferior, 2, str(apellidos).upper())
+                
+                # Columna K (11): Nombres (ocupa de K en adelante)
+                escribir_celda_segura(fila_inferior, 11, str(nombres).upper())
+
+                # Avanzamos a la siguiente fila en ambos bloques
+                fila_superior += 1
+                fila_inferior += 1
+
+            wb.save(ruta_guardado)
+            return {"status": "success"}
+
+        except Exception as e:
+            print(f"❌ Error al generar Excel: {e}")
+            return {"status": "error", "message": str(e)}
 def iniciar_aplicacion():
     api_global = SistemaAPI()
     window = webview.create_window(

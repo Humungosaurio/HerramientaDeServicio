@@ -1,0 +1,1 @@
+Para guardar excel necesitas primero encender tu entorno virtual y descargar openpyxl y Pillow
