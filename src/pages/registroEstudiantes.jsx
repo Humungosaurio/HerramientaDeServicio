@@ -142,8 +142,9 @@ const RegistroAlumnos = () => {
       tallaCalzado: '',
       ...defectoAcademico,
       representanteLegal: '',
-      representanteInstitucional: '',
+      tieneRepInstitucional: false,
       re_inst_ci: '',
+      representanteInstitucional: '',
       re_inst_parentesco: '',
       re_inst_fechaNacimiento: '',
       re_inst_lugarNacimiento: '',
@@ -180,7 +181,7 @@ const RegistroAlumnos = () => {
 
           const camposNumericos = ['edad', 'cedulaEscolar', 'repCi', 're_inst_ci', 'repTelefono', 're_inst_telefono', 'tallaCalzado'];
           if (camposNumericos.includes(campo)) {
-            nuevoValor = nuevoValor.replace(/\D/g, ''); 
+            nuevoValor = String(nuevoValor).replace(/\D/g, ''); 
           }
 
           if (campo === 'combinacionAcademica') {
@@ -235,8 +236,30 @@ const RegistroAlumnos = () => {
       let errores = [];
 
       if (window.pywebview && window.pywebview.api) {
-        for (const estudiante of estudiantesValidos) {
-          const respuesta = await window.pywebview.api.registrar_estudiante_completo(estudiante);
+        for (let estudiante of estudiantesValidos) {
+          
+          // =========================================================================
+          // 🛡️ INTERCEPTOR DE DUPLICACIÓN DE DATOS (REPRESENTANTE INSTITUCIONAL)
+          // =========================================================================
+          let payload = { ...estudiante };
+          
+          // Si el usuario dijo que NO es diferente (es decir, el mismo legal que institucional)
+          // Clonanmos explícitamente los datos de rep -> re_inst para enviarlos limpios al backend
+          if (!payload.tieneRepInstitucional) {
+            payload.re_inst_ci = payload.repCi;
+            payload.representanteInstitucional = payload.repNombre || payload.representanteLegal;
+            payload.re_inst_direccion = payload.repDireccion || payload.direccion;
+            payload.re_inst_fechaNacimiento = payload.repFechaNacimiento;
+            payload.re_inst_gradoInstruccion = payload.repGradoInstruccion;
+            payload.re_inst_trabaja = payload.repTrabaja;
+            payload.re_inst_dondeTrabaja = payload.repDondeTrabaja;
+            payload.re_inst_parentesco = payload.repParentesco;
+            payload.re_inst_lugarNacimiento = payload.repLugarNacimiento;
+            payload.re_inst_telefono = payload.repTelefono;
+            payload.re_inst_correo = payload.repCorreo;
+          }
+
+          const respuesta = await window.pywebview.api.registrar_estudiante_completo(payload);
           if (respuesta.status === 'success') {
             exitoCount++;
           } else {
@@ -695,11 +718,11 @@ const RegistroAlumnos = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Representante Legal</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.representanteLegal} onChange={(e) => handleInputChange(estudianteActivo.id, 'representanteLegal', e.target.value)} />
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repNombre} onChange={(e) => handleInputChange(estudianteActivo.id, 'repNombre', e.target.value)} placeholder="Ej. Carlos Pérez" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Cédula de Identidad</label>
-                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCi} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCi', e.target.value)} />
+                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCi} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCi', e.target.value)} placeholder="Ej. 10222333" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Parentesco</label>
@@ -721,12 +744,12 @@ const RegistroAlumnos = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Teléfono</label>
-                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repTelefono} onChange={(e) => handleInputChange(estudianteActivo.id, 'repTelefono', e.target.value)} />
+                    <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repTelefono} onChange={(e) => handleInputChange(estudianteActivo.id, 'repTelefono', e.target.value)} placeholder="Ej. 04120000000" />
                   </div>
                   
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Correo Electrónico</label>
-                    <input type="email" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCorreo} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCorreo', e.target.value)} />
+                    <input type="email" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCorreo} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCorreo', e.target.value)} placeholder="ejemplo@correo.com" />
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Grado de Instrucción</label>
@@ -762,7 +785,7 @@ const RegistroAlumnos = () => {
                   
                   <div className="md:col-span-4">
                     <label className="block text-xs font-bold text-gray-600 mb-1">Dirección de Residencia</label>
-                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repDireccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'repDireccion', e.target.value)} />
+                    <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repDireccion} onChange={(e) => handleInputChange(estudianteActivo.id, 'repDireccion', e.target.value)} placeholder="Dirección completa del representante" />
                   </div>
                 </div>
               </div>

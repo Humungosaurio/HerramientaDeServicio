@@ -4,6 +4,7 @@ import webview
 from controllers.register_cntrl import AcademicController
 from controllers.asis_det_cntrl import Asis_Det_Controller
 from controllers.personal_cntrl import PersonalController
+from controllers.inventario_cntrl import InventarioController
 
 def inicializar_base_de_datos(db_path):
     """
@@ -79,17 +80,16 @@ def inicializar_base_de_datos(db_path):
         UNIQUE(cedula_trabajador, mes, semana, dia_semana)
     );
 
-    -- =========================================================
-    -- MÓDULO DE INVENTARIO Y BIENES
-    -- =========================================================
+    --- MODULO DE INVENTARIO
 
     CREATE TABLE IF NOT EXISTS inventario_mobiliario (
         mobiliario_id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL,
         cantidad INTEGER NOT NULL CHECK(cantidad >= 0),
-        activo INTEGER NOT NULL DEFAULT 1, -- 1: Activo, 0: Inactivo/Dañado
-        comentarios TEXT
+        activo TEXT NOT NULL DEFAULT 'En uso',
+        comentario TEXT
     );
+
     """
     
     try:
@@ -113,6 +113,7 @@ class SistemaAPI:
         self.controlador_academico = AcademicController(self.db_path)
         self.controlador_asistencia = Asis_Det_Controller(self.db_path)
         self.controlador_personal = PersonalController(self.db_path)
+        self.controlador_inventario = InventarioController(self.db_path)
 
     # =========================================================
     # PUENTES ACADÉMICOS Y ESTUDIANTILES
@@ -143,6 +144,20 @@ class SistemaAPI:
     def guardar_asistencias_personal(self, data):
         """Guarda el pase de lista del personal ejecutado en React"""
         return self.controlador_personal.guardar_asistencias_personal(data)
+    
+    # PUENTE PARA EL INVENTARIO
+    
+    def cargar_inventario(self):
+        """Devuelve la lista completa de bienes registrados en SQLite"""
+        return self.controlador_inventario.cargar_inventario()
+
+    def guardar_inventario_masivo(self, lista_bienes):
+        """Inserta o actualiza lotes de mobiliario en SQLite"""
+        return self.controlador_inventario.guardar_inventario_masivo(lista_bienes)
+
+    def eliminar_articulo_inventario(self, id_articulo):
+        """Elimina un bien de manera permanente por su ID"""
+        return self.controlador_inventario.eliminar_articulo(id_articulo)
 
 
 def iniciar_aplicacion():
