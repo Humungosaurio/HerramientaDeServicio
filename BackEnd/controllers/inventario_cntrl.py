@@ -76,15 +76,15 @@ class InventarioController:
 
     def eliminar_articulo(self, id_articulo):
         """Elimina un bien usando el identificador exacto de tu tabla."""
+        if not id_articulo:
+            return {"status": "error", "message": "ID inválido proporcionado por la interfaz."}
+            
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         try:
             cursor.execute("DELETE FROM inventario_mobiliario WHERE mobiliario_id = ?", (int(id_articulo),))
             conn.commit()
             return {"status": "success", "message": "Artículo eliminado de la base de datos."}
-        except Exception as e:
-            conn.rollback()
-            print(f"❌ Error al eliminar artículo: {e}")
-            return {"status": "error", "message": str(e)}
+        # ... resto de tu código igual
         finally:
             conn.close()

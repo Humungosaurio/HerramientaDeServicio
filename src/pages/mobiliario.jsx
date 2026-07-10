@@ -87,9 +87,15 @@ const BienesMobiliario = () => {
 
   const confirmarEliminarBien = async () => {
     if (itemParaEliminar && window.pywebview && window.pywebview.api) {
-      const res = await window.pywebview.api.eliminar_articulo(itemParaEliminar.id);
+      // Nos aseguramos de convertir el ID a número por si acaso llega como string
+      const res = await window.pywebview.api.eliminar_articulo(Number(itemParaEliminar.id));
+      
       if (res.status === "success") {
-        setInventario(inventario.filter((item) => item.id !== itemParaEliminar.id));
+        // 💡 SOLUCIÓN: Usamos "prev" para asegurar que filtramos sobre los datos más recientes
+        setInventario((prev) => prev.filter((item) => item.id !== itemParaEliminar.id));
+        
+        // Alternativa súper segura: forzar la recarga desde BD descomentando la siguiente línea
+        // cargarDatosBD(); 
       } else {
         alert("❌ Error al eliminar: " + res.message);
       }
@@ -97,7 +103,6 @@ const BienesMobiliario = () => {
     setModalBorrarAbierto(false);
     setItemParaEliminar(null);
   };
-
   // --- Edición ---
   const handleInventarioChange = (id, campo, valor) => {
     setInventario(inventario.map(item => item.id === id ? { ...item, [campo]: valor } : item));
@@ -269,8 +274,14 @@ const BienesMobiliario = () => {
                     rows={1}
                   />
                 </td>
-                <td className="p-4 text-center">
-                  <button onClick={() => solicitarEliminarBien(item)} className="text-red-500 hover:text-red-700">🗑️</button>
+                  <td className="p-4 text-center">
+                  <button 
+                    type="button" // 👈 Añadir esto 
+                    onClick={() => solicitarEliminarBien(item)} 
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    🗑️
+                  </button>
                 </td>
               </tr>
             ))}
