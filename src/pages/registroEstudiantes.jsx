@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'; // AÑADIDO: useEffect para cargar al inicio
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { generarExcelEstudiantes } from '../components/excelRegistro'; 
+import { generarExcelEstudiantes } from '../components/Excel_comp/excelRegistro'; 
 
 const RegistroAlumnos = () => {
   const [estudiantes, setEstudiantes] = useState([]);
@@ -16,6 +16,7 @@ const RegistroAlumnos = () => {
 
   const [showModalExportar, setShowModalExportar] = useState(false);
   const [seccionExportar, setSeccionExportar] = useState("");
+  const [tipoMatricula, setTipoMatricula] = useState("final"); // <-- NUEVO ESTADO AGREGADO
   
   const getPrimerDiaMes = () => {
     const hoy = new Date();
@@ -72,9 +73,6 @@ const RegistroAlumnos = () => {
     });
   });
 
-  // =========================================================================
-  // NUEVO: EFECTO DE CARGA AUTOMÁTICA DE DATOS DESDE PYWEBVIEW
-  // =========================================================================
   useEffect(() => {
     const cargarDatosLocal = async () => {
       if (window.pywebview && window.pywebview.api) {
@@ -87,7 +85,6 @@ const RegistroAlumnos = () => {
           console.error("Error al obtener datos iniciales de SQLite:", error);
         }
       } else {
-        // Reintento en caso de que pywebview tarde unos milisegundos en inyectar la API
         window.addEventListener('pywebviewready', async () => {
           try {
             const listaBD = await window.pywebview.api.obtener_estudiantes();
@@ -312,7 +309,6 @@ const RegistroAlumnos = () => {
 
         if (errores.length === 0) {
           alert(`✅ ¡Éxito! Se sincronizaron ${exitoCount} estudiante(s) correctamente en la Base de Datos.`);
-          // Opcionalmente podemos recargar la lista de Python para asegurar sincronía total
           const listaBD = await window.pywebview.api.obtener_estudiantes();
           if (listaBD && listaBD.length > 0) setEstudiantes(listaBD);
         } else {
@@ -327,8 +323,9 @@ const RegistroAlumnos = () => {
     }
   };
 
-  const exportarAExcel = () => {
-    const descargado = generarExcelEstudiantes(estudiantes, seccionExportar, nombreArchivo, getPrimerDiaMes());
+  // ACTUALIZADO: Pasamos tipoMatricula como quinto argumento
+  const exportarAExcel = async () => {
+    const descargado = await generarExcelEstudiantes(estudiantes, seccionExportar, nombreArchivo, getPrimerDiaMes(), tipoMatricula);
     if (descargado) {
       setShowModalExportar(false);
     }
@@ -948,7 +945,7 @@ const RegistroAlumnos = () => {
         </div>
       )}
 
-      {/* MODAL MODIFICADO PARA EXPORTAR A EXCEL (CON VISTA PREVIA) */}
+      {/* MODAL PARA EXPORTAR A EXCEL (CON SELECTOR DE TIPO DE MATRÍCULA INTEGRADO) */}
       {showModalExportar && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-gray-200">
@@ -976,6 +973,43 @@ const RegistroAlumnos = () => {
                   <span className="text-gray-400 text-sm font-bold ml-2">.xlsx</span>
                 </div>
               </div>
+
+              {/* ========================================================= */}
+              {/* SELECTOR DE TIPO DE MATRÍCULA (INICIAL / FINAL) */}
+              {/* ========================================================= */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Tipo de Formato Oficial
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTipoMatricula("inicial")}
+                    className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      tipoMatricula === "inicial"
+                        ? "bg-green-50 border-green-600 text-green-800 shadow-sm font-bold ring-2 ring-green-600/20"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+                    }`}
+                  >
+                    <span className="text-xl mb-1">🌱</span>
+                    <span className="text-xs uppercase tracking-wider">Matrícula Inicial</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTipoMatricula("final")}
+                    className={`p-3 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      tipoMatricula === "final"
+                        ? "bg-green-50 border-green-600 text-green-800 shadow-sm font-bold ring-2 ring-green-600/20"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+                    }`}
+                  >
+                    <span className="text-xl mb-1">🎓</span>
+                    <span className="text-xs uppercase tracking-wider">Matrícula Final</span>
+                  </button>
+                </div>
+              </div>
+              {/* ========================================================= */}
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Filtro de Sección para Exportar</label>

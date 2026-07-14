@@ -5,7 +5,9 @@ from controllers.register_cntrl import AcademicController
 from controllers.asis_det_cntrl import Asis_Det_Controller
 from controllers.personal_cntrl import PersonalController
 from controllers.inventario_cntrl import InventarioController
-from controllers.reporte_cntrl import ReporteController
+from controllers.excels.reporte_cntrl import ReporteController
+from controllers.excels.reporte_ini_cntrl import ReporteIniController
+from controllers.excels.mobiliaria_cntrl import MobiliariaController
 
 def inicializar_base_de_datos(db_path):
     db_dir = os.path.dirname(db_path)
@@ -151,6 +153,8 @@ class SistemaAPI:
         self.controlador_asistencia = Asis_Det_Controller(self.db_path)
         self.controlador_personal = PersonalController(self.db_path)
         self.controlador_inventario = InventarioController(self.db_path)
+        self.controlador_reporte_ini = ReporteIniController()
+        self.controlador_mobiliaria = MobiliariaController()
         
         # NUEVO CONTROLADOR DE REPORTES
         self.controlador_reporte = ReporteController()
@@ -202,6 +206,11 @@ class SistemaAPI:
     # =========================================================
     def generar_excel_desde_plantilla(self, datos_estudiantes, nombre_archivo):
         return self.controlador_reporte.generar_excel_desde_plantilla(datos_estudiantes, nombre_archivo)
+    
+    def generar_excel_inicial_desde_plantilla(self, datos_estudiantes, nombre_archivo):
+        return self.controlador_reporte_ini.generar_excel_desde_plantilla(datos_estudiantes, nombre_archivo)
+    def generar_excel_mobiliaria(self, datos_mobiliario, nombre_archivo):
+        return self.controlador_mobiliaria.generar_excel_desde_plantilla(datos_mobiliario, nombre_archivo)
 
 
 def iniciar_aplicacion():

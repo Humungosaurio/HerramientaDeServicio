@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import * as XLSX from "xlsx"; // 📌 NUEVO: Importamos la librería para Excel
+import { generarExcelMobiliaria } from '../components/Excel_comp/excelMobiliaria';
 
 const BienesMobiliario = () => {
   const [busqueda, setBusqueda] = useState("");
@@ -39,7 +41,7 @@ const BienesMobiliario = () => {
     cargarDatosBD();
   }, []);
 
-  // --- Modal Añadir Artículos (CORREGIDO: Ahora inicializa con 'observaciones' vacío) ---
+  // --- Modal Añadir Artículos ---
   const abrirModalCarga = () => {
     setNuevosArticulos([
       { id: Date.now(), nombre: "", cantidad: 1, enUso: true, observaciones: "" }
@@ -87,15 +89,10 @@ const BienesMobiliario = () => {
 
   const confirmarEliminarBien = async () => {
     if (itemParaEliminar && window.pywebview && window.pywebview.api) {
-      // Nos aseguramos de convertir el ID a número por si acaso llega como string
       const res = await window.pywebview.api.eliminar_articulo(Number(itemParaEliminar.id));
       
       if (res.status === "success") {
-        // 💡 SOLUCIÓN: Usamos "prev" para asegurar que filtramos sobre los datos más recientes
         setInventario((prev) => prev.filter((item) => item.id !== itemParaEliminar.id));
-        
-        // Alternativa súper segura: forzar la recarga desde BD descomentando la siguiente línea
-        // cargarDatosBD(); 
       } else {
         alert("❌ Error al eliminar: " + res.message);
       }
@@ -103,6 +100,7 @@ const BienesMobiliario = () => {
     setModalBorrarAbierto(false);
     setItemParaEliminar(null);
   };
+
   // --- Edición ---
   const handleInventarioChange = (id, campo, valor) => {
     setInventario(inventario.map(item => item.id === id ? { ...item, [campo]: valor } : item));
@@ -119,6 +117,26 @@ const BienesMobiliario = () => {
         alert("❌ Error: " + res.message);
       }
     }
+  };
+// ==========================================
+  // 📌 NUEVO: LÓGICA PARA EXPORTAR A EXCEL (Arreglada)
+  // ==========================================
+  const exportarAExcel = async () => {
+    // Si quieres exportar todos los datos, usa 'inventario'. 
+    // Si quieres exportar solo los que aparecen en pantalla al buscar, cambia 'inventario' por 'itemsProcesados'
+    const datosAExportar = inventario; 
+
+    if (datosAExportar.length === 0) {
+      alert("⚠️ No hay artículos en el inventario para exportar.");
+      return;
+    }
+
+    // Calculamos una fecha para el nombre del archivo
+    const fecha = new Date().toLocaleDateString("es-VE").replace(/\//g, "-");
+    const nombreDefecto = `Inventario_Mobiliaria_${fecha}`;
+    
+    // Llamamos a la función del helper (excelMobiliaria.jsx)
+    await generarExcelMobiliaria(datosAExportar, nombreDefecto, nombreDefecto);
   };
 
   // Búsqueda y Ordenamiento
@@ -153,6 +171,15 @@ const BienesMobiliario = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          
+          {/* 📌 NUEVO: Botón de Exportar a Excel */}
+          <button
+            onClick={exportarAExcel}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-2"
+          >
+            <span>📊</span> Descargar Excel
+          </button>
+
           <button
             onClick={() => setModoEdicion(!modoEdicion)}
             className={`font-bold text-sm px-5 py-2.5 rounded-lg shadow-md transition-all ${
@@ -276,7 +303,7 @@ const BienesMobiliario = () => {
                 </td>
                   <td className="p-4 text-center">
                   <button 
-                    type="button" // 👈 Añadir esto 
+                    type="button"
                     onClick={() => solicitarEliminarBien(item)} 
                     className="text-red-500 hover:text-red-700"
                   >
@@ -289,7 +316,7 @@ const BienesMobiliario = () => {
         </table>
       </div>
 
-      {/* MODAL NUEVOS (CORREGIDO: Con campo de comentarios integrado) */}
+      {/* MODAL NUEVOS */}
       {modalCargaAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-5xl w-full p-6 shadow-2xl flex flex-col max-h-[85vh]">
@@ -339,7 +366,6 @@ const BienesMobiliario = () => {
                             className="w-4 h-4 accent-purple-700"
                           />
                         </td>
-                        {/* NUEVO CAMPO AGREGADO AL MODAL */}
                         <td className="p-2">
                           <input
                             type="text"

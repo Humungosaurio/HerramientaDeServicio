@@ -24,7 +24,7 @@ const AsistenciasPersonal = () => {
   const semanas = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-  const META_HORAS_SEMANALES = 35;
+  const META_HORAS_SEMANALES = 25;
 
   // 2. FUNCIÓN DE CARGA DESDE EL BACKEND
   const cargarAsistencias = async () => {

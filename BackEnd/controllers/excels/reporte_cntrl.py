@@ -9,11 +9,17 @@ class ReporteController:
     def generar_excel_desde_plantilla(self, datos_estudiantes, nombre_archivo):
         try:
             # Subimos un nivel porque ahora estamos dentro de la carpeta 'controllers'
-            base_dir = os.path.dirname(os.path.dirname(__file__))
-            ruta_plantilla = os.path.join(base_dir, "plantilla_matricula.xlsx")
+            # base_dir apunta a la raíz de la carpeta 'backend'
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            
+            # NUEVA RUTA: Agregamos la carpeta 'Excels' al pipeline de la ruta
+            ruta_plantilla = os.path.join(base_dir, "Excels", "plantilla_matricula.xlsx")
             
             if not os.path.exists(ruta_plantilla):
-                return {"status": "error", "message": "No se encontró el archivo plantilla_matricula.xlsx en el backend."}
+                return {
+                    "status": "error", 
+                    "message": f"No se encontró el archivo plantilla_matricula.xlsx en la ruta esperada: {ruta_plantilla}"
+                }
 
             window = webview.windows[0]
             result = window.create_file_dialog(

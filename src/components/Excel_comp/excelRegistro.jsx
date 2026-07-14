@@ -1,9 +1,7 @@
-import * as XLSX from 'xlsx';
-
 /**
- * Genera y descarga un archivo Excel con formato de plantilla oficial.
+ * Genera y descarga un archivo Excel eligiendo dinámicamente el controlador según el tipo de matrícula.
  */
-export const generarExcelEstudiantes = async (estudiantes, seccionExportar, nombreArchivo, fechaDefecto) => {
+export const generarExcelEstudiantes = async (estudiantes, seccionExportar, nombreArchivo, fechaDefecto, tipoMatricula) => {
   // 1. Filtrar estudiantes válidos
   let datosAExportar = estudiantes.filter(est => est.nombre && est.nombre.trim() !== "");
 
@@ -22,16 +20,23 @@ export const generarExcelEstudiantes = async (estudiantes, seccionExportar, nomb
 
   const nombreDescarga = !nombreArchivo || nombreArchivo.trim() === "" ? fechaDefecto : nombreArchivo.trim();
 
-  // 3. Enviar los datos directamente a Python para que use la plantilla oficial
+  // 3. Enviar los datos al controlador de Python correspondiente
   if (window.pywebview && window.pywebview.api) {
     try {
-      const respuesta = await window.pywebview.api.generar_excel_desde_plantilla(datosAExportar, nombreDescarga);
+      let respuesta;
+      
+      // Decidimos qué función del backend llamar basándonos en la UI
+      if (tipoMatricula === "inicial") {
+        respuesta = await window.pywebview.api.generar_excel_inicial_desde_plantilla(datosAExportar, nombreDescarga);
+      } else {
+        respuesta = await window.pywebview.api.generar_excel_desde_plantilla(datosAExportar, nombreDescarga);
+      }
       
       if (respuesta.status === "success") {
-        alert("✅ Archivo Excel generado y guardado correctamente.");
+        alert(`✅ Archivo Excel de Matrícula ${tipoMatricula === 'inicial' ? 'Inicial' : 'Final'} generado correctamente.`);
         return true;
       } else if (respuesta.status === "error") {
-        alert(`❌ Ocurrió un error: ${respuesta.message}`);
+        alert(`❌ Ocurrió un error en el backend: ${respuesta.message}`);
         return false;
       }
     } catch (error) {
