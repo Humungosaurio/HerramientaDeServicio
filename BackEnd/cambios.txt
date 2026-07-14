@@ -1,0 +1,4 @@
+Boton de guardas mobilaria 
+año escolar en registros para que no cuene feriados
+separar nombre y apellido del formulario
+conectar boton de borrado en  registro

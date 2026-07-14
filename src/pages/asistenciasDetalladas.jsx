@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { excelAsis } from "../components/Excel_comp/excelAsistenciasDetalladas";
 
 const AsistenciasDetalladas = () => {
   // Matriz de meses en español para la asignación automática
@@ -22,12 +23,26 @@ const AsistenciasDetalladas = () => {
   const [nivelSeleccionado, setNivelSeleccionado] = useState("Maternal");
   const [turnoSeleccionado, setTurnoSeleccionado] = useState("Mañana");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("Semana 1");
-
-  // Cambiado de "Junio" fijo a la lectura directa del mes actual del sistema
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualSistema);
 
-  // NUEVO: Estado para el buscador por nombre
+  // Estado para el buscador por nombre
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
+
+  // ESTADOS NUEVOS PARA EXPORTACIÓN A EXCEL
+  const [opcionExportar, setOpcionExportar] = useState("Todos");
+  
+  // Opciones combinadas (Grados + Turnos)
+  const opcionesExportar = [
+    "Todos",
+    "Maternal Mañana",
+    "Maternal Tarde",
+    "1er Nivel Mañana",
+    "1er Nivel Tarde",
+    "2do Nivel Mañana",
+    "2do Nivel Tarde",
+    "3er Nivel Mañana",
+    "3er Nivel Tarde"
+  ];
 
   // Datos reales desde la BD
   const [alumnos, setAlumnos] = useState([]);
@@ -48,10 +63,9 @@ const AsistenciasDetalladas = () => {
     if (window.pywebview && window.pywebview.api) {
       const res = await window.pywebview.api.cargar_matriz_asistencia({
         grado: nivelSeleccionado, turno: turnoSeleccionado,
-        semana: semanaSeleccionada, mes: mesSeleccionado, seccion: "A" // Ajustar si hay más secciones
+        semana: semanaSeleccionada, mes: mesSeleccionado, seccion: "A" 
       });
       if (res.status === 'success') {
-        // Asegurar que tengan el campo estado, por defecto Vigente
         const adaptados = res.data.map(al => ({
           ...al,
           estado: al.estado || 'Vigente'
@@ -71,7 +85,6 @@ const AsistenciasDetalladas = () => {
   };
 
   const guardarCambiosBD = async () => {
-    // NUEVO: Filtrar para enviar solo los vigentes a la base de datos
     const alumnosVigentes = alumnos.filter(al => al.estado !== 'Retirado');
 
     if (window.pywebview && window.pywebview.api) {
@@ -86,7 +99,16 @@ const AsistenciasDetalladas = () => {
     }
   };
 
-  // NUEVO: Lógica combinada para mostrar solo Vigentes y aplicar el buscador
+const handleDescargarExcel = async () => {
+  // Llamamos al controlador que acabamos de crear pasándole los estados actuales
+  await excelAsis(
+    alumnos,             // La lista de alumnos que está viendo la persona actualmente
+    opcionExportar,      // El grado/turno seleccionado en el select ("Todos", "Maternal Mañana"...)
+    mesSeleccionado,     // El mes actual ("Julio", etc.)
+    semanaSeleccionada   // La semana actual ("Semana 1", etc.)
+  );
+};
+
   const alumnosMostrados = alumnos
     .filter(al => al.estado !== 'Retirado')
     .filter(al => al.nombre.toLowerCase().includes(busquedaAlumno.toLowerCase().trim()));
@@ -103,9 +125,8 @@ const AsistenciasDetalladas = () => {
         </aside>
 
         <main className="flex-1">
-          <header className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-end border-b pb-4 gap-4">
+          <header className="mb-6 flex flex-col xl:flex-row xl:justify-between xl:items-end border-b pb-4 gap-4">
             <div>
-              {/* Se añade la referencia del mes actual detectado y el banner de fecha */}
               <p className="text-sm text-purple-600 font-bold uppercase tracking-widest">
                 Pase de Lista Detallado — Mes Actual: {mesSeleccionado}
               </p>
@@ -114,9 +135,36 @@ const AsistenciasDetalladas = () => {
                 📅 Fecha de registro: <span className="capitalize text-purple-300">{fechaHoyFormateada}</span>
               </p>
             </div>
-            <div className="flex gap-2">
-              <Link to="/" className="bg-white px-4 py-2 rounded-md font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">🏠 Inicio</Link>
-              <button onClick={guardarCambiosBD} className="bg-purple-700 text-white px-5 py-2 rounded-md font-bold shadow-md hover:bg-purple-800 transition-colors">💾 Guardar Reporte</button>
+            
+            <div className="flex flex-col gap-3 xl:items-end">
+              {/* --- NUEVA SECCIÓN DE EXPORTACIÓN A EXCEL --- */}
+              <div className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm w-fit">
+                <label className="text-xs font-bold text-gray-600 uppercase pl-1">Exportar Excel:</label>
+                <select 
+                  value={opcionExportar}
+                  onChange={(e) => setOpcionExportar(e.target.value)}
+                  className="px-2 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-green-600 bg-white min-w-[150px] font-medium"
+                >
+                  {opcionesExportar.map(op => (
+                    <option key={op} value={op}>{op}</option>
+                  ))}
+                </select>
+                <button 
+                  onClick={handleDescargarExcel} 
+                  className="bg-green-600 text-white px-3 py-1.5 rounded-md text-sm font-bold shadow hover:bg-green-700 transition-colors flex items-center gap-2"
+                  title="Descargar reporte en formato Excel"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Descargar
+                </button>
+              </div>
+              
+              <div className="flex gap-2 w-fit">
+                <Link to="/" className="bg-white px-4 py-2 rounded-md font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">🏠 Inicio</Link>
+                <button onClick={guardarCambiosBD} className="bg-purple-700 text-white px-5 py-2 rounded-md font-bold shadow-md hover:bg-purple-800 transition-colors">💾 Guardar Reporte</button>
+              </div>
             </div>
           </header>
 
@@ -129,18 +177,16 @@ const AsistenciasDetalladas = () => {
                 {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white" : "text-gray-600"}`}>{s}</button>)}
               </div>
             </div>
-            {/* Distintivo estético para recordar bajo qué mes se guardará en la base de datos */}
             <div className="text-xs font-bold text-gray-500 uppercase bg-gray-200 px-3 py-2 rounded-lg">
               Guardando en: <span className="text-purple-700 font-black">{mesSeleccionado}</span>
             </div>
           </div>
 
-          {/* NUEVO: Buscador de alumnos */}
           <div className="mb-4">
             <input
               type="text"
               placeholder="🔍 Buscar alumno por nombre..."
-              className="w-full md:w-1/2 p-2.5 border border-gray-300 rounded-lg outline-none focus:border-purple-500 text-sm bg-white"
+              className="w-full md:w-1/2 p-2.5 border border-gray-300 rounded-lg outline-none focus:border-purple-500 text-sm bg-white shadow-sm"
               value={busquedaAlumno}
               onChange={(e) => setBusquedaAlumno(e.target.value)}
             />

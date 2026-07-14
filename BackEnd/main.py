@@ -8,6 +8,7 @@ from controllers.inventario_cntrl import InventarioController
 from controllers.excels.reporte_cntrl import ReporteController
 from controllers.excels.reporte_ini_cntrl import ReporteIniController
 from controllers.excels.mobiliaria_cntrl import MobiliariaController
+from controllers.excels.asistencia_cntrl import AsistenciasController
 
 def inicializar_base_de_datos(db_path):
     db_dir = os.path.dirname(db_path)
@@ -155,9 +156,10 @@ class SistemaAPI:
         self.controlador_inventario = InventarioController(self.db_path)
         self.controlador_reporte_ini = ReporteIniController()
         self.controlador_mobiliaria = MobiliariaController()
-        
-        # NUEVO CONTROLADOR DE REPORTES
         self.controlador_reporte = ReporteController()
+        
+        # LÍNEA CORREGIDA: Se instancia AsistenciasController en lugar de Asis_Det_Controller
+        self.controlador_asistencias_excel = AsistenciasController(self.db_path)
 
     # =========================================================
     # PUENTES ACADÉMICOS Y ESTUDIANTILES
@@ -209,9 +211,12 @@ class SistemaAPI:
     
     def generar_excel_inicial_desde_plantilla(self, datos_estudiantes, nombre_archivo):
         return self.controlador_reporte_ini.generar_excel_desde_plantilla(datos_estudiantes, nombre_archivo)
+    
     def generar_excel_mobiliaria(self, datos_mobiliario, nombre_archivo):
         return self.controlador_mobiliaria.generar_excel_desde_plantilla(datos_mobiliario, nombre_archivo)
-
+    
+    def generar_excel_asistencias(self, params):
+        return self.controlador_asistencias_excel.generar_excel_asistencias(params)
 
 def iniciar_aplicacion():
     api_global = SistemaAPI()
