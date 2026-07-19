@@ -6,11 +6,7 @@ class AcademicController:
         self.db_path = db_path
 
     def registrar_estudiante_completo(self, data):
-        # 1. AÑADIDO: timeout=20 le dice a Python que si la BD está ocupada, 
-        # espere hasta 20 segundos a que se libere antes de dar error.
         conn = sqlite3.connect(self.db_path, timeout=20.0)
-        
-        # 2. AÑADIDO: Modo WAL para evitar bloqueos entre lecturas y escrituras
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA foreign_keys = ON;")
         cursor = conn.cursor()
@@ -29,12 +25,24 @@ class AcademicController:
 
             trabaja_rep = 1 if str(data.get('repTrabaja')).lower() in ('sí', 'si', '1', 'true') else 0
             
+            # 1. Guardado de Representante (Sin borrar filas existentes)
             cursor.execute("""
-                INSERT OR REPLACE INTO representante (
+                INSERT INTO representante (
                     representante_ci, nombre, direccion, fecha_nacimiento,
                     grado_educacion, trabaja, direccion_trabajo,
                     parentesco, lugar_nacimiento, telefono, correo
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(representante_ci) DO UPDATE SET
+                    nombre = excluded.nombre,
+                    direccion = excluded.direccion,
+                    fecha_nacimiento = excluded.fecha_nacimiento,
+                    grado_educacion = excluded.grado_educacion,
+                    trabaja = excluded.trabaja,
+                    direccion_trabajo = excluded.direccion_trabajo,
+                    parentesco = excluded.parentesco,
+                    lugar_nacimiento = excluded.lugar_nacimiento,
+                    telefono = excluded.telefono,
+                    correo = excluded.correo;
             """, (
                 rep_ci,
                 data.get('repNombre') or data.get('representanteLegal') or 'Sin Nombre',
@@ -51,12 +59,24 @@ class AcademicController:
             
             trabaja_inst = 1 if str(data.get('re_inst_trabaja')).lower() in ('sí', 'si', '1', 'true') else 0
             
+            # 2. Guardado de Representante Institucional (Sin borrar filas existentes)
             cursor.execute("""
-                INSERT OR REPLACE INTO rep_responsable (
+                INSERT INTO rep_responsable (
                     re_inst_ci, nombre, direccion, fecha_nacimiento,
                     grado_educacion, trabaja, direccion_trabajo,
                     parentesco, lugar_nacimiento, telefono, correo
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(re_inst_ci) DO UPDATE SET
+                    nombre = excluded.nombre,
+                    direccion = excluded.direccion,
+                    fecha_nacimiento = excluded.fecha_nacimiento,
+                    grado_educacion = excluded.grado_educacion,
+                    trabaja = excluded.trabaja,
+                    direccion_trabajo = excluded.direccion_trabajo,
+                    parentesco = excluded.parentesco,
+                    lugar_nacimiento = excluded.lugar_nacimiento,
+                    telefono = excluded.telefono,
+                    correo = excluded.correo;
             """, (
                 re_inst_ci,
                 data.get('representanteInstitucional') or data.get('repNombre') or 'Sin Nombre',
@@ -87,16 +107,31 @@ class AcademicController:
                 raise Exception(f"No se encontró el salón en la base de datos para: Grado '{grado}', Turno '{turno}', Sección '{seccion}'.")
             
             salon_id = row[0]
-
             fecha_hoy = datetime.now().strftime("%d-%m-%Y")
 
+            # 3. Guardado de Estudiante (UPSERT - Protege asistencias y fecha de ingreso original)
             cursor.execute("""
-                INSERT OR REPLACE INTO Estudiante (
+                INSERT INTO Estudiante (
                     cedula_estudiantil, est_nombre, est_apellido, est_direccion, est_genero,
                     neurodiversidad, est_fecha_nacimiento, fecha_ingreso, 
                     re_inst_ci, representante_ci, salon_id,
                     tipo_sangre, talla_mono, talla_camisa, talla_calzado, estado
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(cedula_estudiantil) DO UPDATE SET
+                    est_nombre = excluded.est_nombre,
+                    est_apellido = excluded.est_apellido,
+                    est_direccion = excluded.est_direccion,
+                    est_genero = excluded.est_genero,
+                    neurodiversidad = excluded.neurodiversidad,
+                    est_fecha_nacimiento = excluded.est_fecha_nacimiento,
+                    re_inst_ci = excluded.re_inst_ci,
+                    representante_ci = excluded.representante_ci,
+                    salon_id = excluded.salon_id,
+                    tipo_sangre = excluded.tipo_sangre,
+                    talla_mono = excluded.talla_mono,
+                    talla_camisa = excluded.talla_camisa,
+                    talla_calzado = excluded.talla_calzado,
+                    estado = excluded.estado;
             """, (
                 est_ci,
                 data.get('nombre') or 'Estudiante Sin Nombre',
@@ -124,7 +159,6 @@ class AcademicController:
             print(f"❌ ERROR CRÍTICO EN BACKEND: {e}")
             return {"status": "error", "message": str(e)}
         finally:
-            # 3. CRÍTICO: Aseguramos cerrar el cursor y la conexión siempre
             cursor.close()
             conn.close()
 
