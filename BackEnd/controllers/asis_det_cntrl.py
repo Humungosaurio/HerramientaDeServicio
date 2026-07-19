@@ -11,23 +11,31 @@ class Asis_Det_Controller:
         mes = str(parametros.get('mes') or 'Junio').strip()
         semana = str(parametros.get('semana') or 'Semana 1').strip()
 
-        conn = sqlite3.connect(self.db_path)
+        # AÑADIDO: Conexión blindada con timeout y WAL para evitar bloqueos
+        conn = sqlite3.connect(self.db_path, timeout=20.0)
+        conn.execute("PRAGMA journal_mode=WAL;")
         cursor = conn.cursor()
         try:
-            # Trae alumnos del salón
+            # CORREGIDO: Se cambia e.est_estatus por e.estado y se añade e.est_apellido
             cursor.execute("""
-                SELECT e.cedula_estudiantil, e.est_nombre, e.est_genero 
+                SELECT e.cedula_estudiantil, e.est_nombre, e.est_apellido, e.est_genero, e.estado 
                 FROM Estudiante e
                 JOIN salones s ON e.salon_id = s.salon_id
                 WHERE LOWER(s.grado) = LOWER(?) AND LOWER(s.turno) = LOWER(?) AND LOWER(s.seccion) = LOWER(?)
-                ORDER BY e.est_nombre ASC
+                  AND (LOWER(e.estado) != 'retirado' OR e.estado IS NULL)
+                ORDER BY e.est_nombre ASC, e.est_apellido ASC
             """, (grado, turno, seccion))
             
             alumnos = cursor.fetchall()
             resultados = []
 
             for alumno in alumnos:
-                cedula, nombre, genero = alumno
+                cedula, nombre, apellido, genero, estatus = alumno
+                
+                # Unificamos nombre y apellido para que se vea completo en la tabla de React
+                nombre_completo = f"{nombre or ''} {apellido or ''}".strip()
+                if not nombre_completo:
+                    nombre_completo = "Sin Nombre"
                 
                 cursor.execute("""
                     SELECT dia_semana, estado FROM asistencias
@@ -40,13 +48,18 @@ class Asis_Det_Controller:
                         asistencia_semana[row[0]] = (row[1] == 'Presente')
 
                 resultados.append({
-                    "id": cedula, "nombre": nombre, "sexo": 'v' if genero == 'Masculino' else 'h',
+                    "id": cedula,
+                    "nombre": nombre_completo,  # <--- Ahora envía Nombre y Apellido
+                    "sexo": 'v' if genero == 'Masculino' else 'h',
+                    "estado": estatus or "Vigente",
                     "asistencia": asistencia_semana
                 })
             return {"status": "success", "data": resultados}
         except Exception as e:
+            print(f"❌ Error al cargar matriz de asistencia: {e}")
             return {"status": "error", "message": str(e)}
         finally:
+            cursor.close()
             conn.close()
 
     def guardar_asistencias(self, data):
@@ -54,7 +67,8 @@ class Asis_Det_Controller:
         semana = data.get('semana')
         registros = data.get('registros', [])
 
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=20.0)
+        conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA foreign_keys = ON;")
         cursor = conn.cursor()
         try:
@@ -72,6 +86,7 @@ class Asis_Det_Controller:
             conn.rollback()
             return {"status": "error", "message": str(e)}
         finally:
+            cursor.close()
             conn.close()
 
     def obtener_resumen_global(self, parametros):
@@ -80,26 +95,59 @@ class Asis_Det_Controller:
         semana = str(parametros.get('semana') or 'Semana 1').strip()
         mes = str(parametros.get('mes') or 'Junio').strip()
 
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=20.0)
+        conn.execute("PRAGMA journal_mode=WAL;")
         cursor = conn.cursor()
         try:
-            # Calcula V y H presentes por sección
+            # 1. Buscamos todas las secciones existentes para el Grado y Turno seleccionados
             cursor.execute("""
-                SELECT 
-                    s.seccion,
-                    COUNT(CASE WHEN e.est_genero = 'Masculino' AND a.estado = 'Presente' THEN 1 END) as varones,
-                    COUNT(CASE WHEN e.est_genero = 'Femenino' AND a.estado = 'Presente' THEN 1 END) as hembras
-                FROM salones s
-                LEFT JOIN Estudiante e ON s.salon_id = e.salon_id
-                LEFT JOIN asistencias a ON e.cedula_estudiantil = a.cedula_estudiantil AND a.mes = ? AND a.semana = ?
-                WHERE LOWER(s.grado) = LOWER(?) AND LOWER(s.turno) = LOWER(?)
-                GROUP BY s.seccion
-                ORDER BY s.seccion ASC
-            """, (mes, semana, grado, turno))
+                SELECT salon_id, seccion 
+                FROM salones 
+                WHERE LOWER(grado) = LOWER(?) AND LOWER(turno) = LOWER(?)
+                ORDER BY seccion ASC
+            """, (grado, turno))
             
-            data = [{"seccion": row[0], "v": row[1], "h": row[2], "total": row[1] + row[2]} for row in cursor.fetchall()]
-            return {"status": "success", "data": data}
+            salones = cursor.fetchall()
+            dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
+            data_final = []
+
+            # 2. Por cada sección, calculamos las asistencias por día
+            for salon_id, seccion in salones:
+                dias_dict = {}
+                
+                for dia in dias_semana:
+                    # Contamos varones y hembras presentes en ese día específico
+                    cursor.execute("""
+                        SELECT 
+                            COUNT(CASE WHEN e.est_genero = 'Masculino' AND a.estado = 'Presente' THEN 1 END) as varones,
+                            COUNT(CASE WHEN e.est_genero = 'Femenino' AND a.estado = 'Presente' THEN 1 END) as hembras
+                        FROM Estudiante e
+                        LEFT JOIN asistencias a ON e.cedula_estudiantil = a.cedula_estudiantil 
+                            AND a.mes = ? AND a.semana = ? AND a.dia_semana = ?
+                        WHERE e.salon_id = ? 
+                          AND (LOWER(e.estado) != 'retirado' OR e.estado IS NULL)
+                    """, (mes, semana, dia, salon_id))
+                    
+                    row = cursor.fetchone()
+                    v = row[0] if row else 0
+                    h = row[1] if row else 0
+                    
+                    # Armamos la estructura exacta que pide React en el frontend
+                    dias_dict[dia] = {
+                        "v": v,
+                        "h": h,
+                        "total": v + h
+                    }
+
+                data_final.append({
+                    "seccion": seccion,
+                    "dias": dias_dict
+                })
+
+            return {"status": "success", "data": data_final}
         except Exception as e:
+            print(f"❌ Error en resumen global por días: {e}")
             return {"status": "error", "message": str(e)}
         finally:
+            cursor.close()
             conn.close()

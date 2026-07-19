@@ -59,10 +59,12 @@ def inicializar_base_de_datos(db_path):
     CREATE TABLE IF NOT EXISTS Estudiante (
         cedula_estudiantil INTEGER PRIMARY KEY,
         est_nombre TEXT NOT NULL,
+        est_apellido TEXT NOT NULL,
         est_direccion TEXT,
         est_genero TEXT NOT NULL,
         neurodiversidad TEXT,
         est_fecha_nacimiento TEXT,
+        fecha_ingreso TEXT,
         re_inst_ci INTEGER,
         representante_ci INTEGER,
         salon_id INTEGER NOT NULL,

@@ -3,16 +3,13 @@ import { Link } from "react-router-dom";
 import { excelAsis } from "../components/Excel_comp/excelAsistenciasDetalladas";
 
 const AsistenciasDetalladas = () => {
-  // Matriz de meses en español para la asignación automática
   const mesesAnio = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
-  // Obtiene el mes actual del sistema
   const mesActualSistema = mesesAnio[new Date().getMonth()];
 
-  // Formatea la fecha actual completa (Ej: "Jueves, 2 de julio de 2026")
   const fechaHoyFormateada = new Date().toLocaleDateString('es-ES', {
     weekday: 'long',
     day: 'numeric',
@@ -25,13 +22,10 @@ const AsistenciasDetalladas = () => {
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("Semana 1");
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualSistema);
 
-  // Estado para el buscador por nombre
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
 
-  // ESTADOS NUEVOS PARA EXPORTACIÓN A EXCEL
   const [opcionExportar, setOpcionExportar] = useState("Todos");
   
-  // Opciones combinadas (Grados + Turnos)
   const opcionesExportar = [
     "Todos",
     "Maternal Mañana",
@@ -44,7 +38,6 @@ const AsistenciasDetalladas = () => {
     "3er Nivel Tarde"
   ];
 
-  // Datos reales desde la BD
   const [alumnos, setAlumnos] = useState([]);
 
   const niveles = ["Maternal", "1er Nivel", "2do Nivel", "3er Nivel"];
@@ -52,10 +45,8 @@ const AsistenciasDetalladas = () => {
   const semanas = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
-  // Cargar datos al cambiar filtros
   useEffect(() => {
     cargarMatriz();
-    // Limpiar el buscador al cambiar de sección
     setBusquedaAlumno("");
   }, [nivelSeleccionado, turnoSeleccionado, semanaSeleccionada, mesSeleccionado]);
 
@@ -99,15 +90,14 @@ const AsistenciasDetalladas = () => {
     }
   };
 
-const handleDescargarExcel = async () => {
-  // Llamamos al controlador que acabamos de crear pasándole los estados actuales
-  await excelAsis(
-    alumnos,             // La lista de alumnos que está viendo la persona actualmente
-    opcionExportar,      // El grado/turno seleccionado en el select ("Todos", "Maternal Mañana"...)
-    mesSeleccionado,     // El mes actual ("Julio", etc.)
-    semanaSeleccionada   // La semana actual ("Semana 1", etc.)
-  );
-};
+  const handleDescargarExcel = async () => {
+    await excelAsis(
+      alumnos,             
+      opcionExportar,      
+      mesSeleccionado,     
+      semanaSeleccionada   
+    );
+  };
 
   const alumnosMostrados = alumnos
     .filter(al => al.estado !== 'Retirado')
@@ -137,7 +127,6 @@ const handleDescargarExcel = async () => {
             </div>
             
             <div className="flex flex-col gap-3 xl:items-end">
-              {/* --- NUEVA SECCIÓN DE EXPORTACIÓN A EXCEL --- */}
               <div className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm w-fit">
                 <label className="text-xs font-bold text-gray-600 uppercase pl-1">Exportar Excel:</label>
                 <select 

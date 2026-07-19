@@ -1,6 +1,6 @@
 IMPORTANTE
 para ejecutar el programa con el backend activo deben:
-#1 activar el entorno virtual con el comando: .\venv\Scripts\Activate.ps1
-2 en una terminal, abran el proyecto normalmente con npm
+
+2 en una terminal, abran el proyecto normalmente con pnpm
 3 en otra terminal (no cierren la primera) ingresen a la carpeta backend con "cd BackEnd" y luego ejecuten el main con:
 python main.py
