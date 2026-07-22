@@ -2,7 +2,7 @@ import os
 import sqlite3
 import webview
 import openpyxl
-from openpyxl.styles import Alignment
+from openpyxl.styles import Alignment, Font, Border, Side
 
 class AsistenciasController:
     def __init__(self, db_path):
@@ -11,18 +11,41 @@ class AsistenciasController:
     def generar_excel_asistencias(self, parametros):
         try:
             datos_alumnos = parametros.get('datos', [])
-            mes = str(parametros.get('mes') or 'Junio').strip()
+            mes = str(parametros.get('mes') or 'Julio').strip()
             
-            # Parámetros para cabecera A2
-            grado = str(parametros.get('grado') or '').strip()
-            seccion = str(parametros.get('seccion') or '').strip()
-            turno = str(parametros.get('turno') or '').strip()
-            nombre_archivo = str(parametros.get('nombre_archivo') or 'Asistencias_Detalladas').strip()
+            # 1. Leer el filtro enviado desde React
+            opcion_filtro = str(parametros.get('opcion_filtro') or '').strip()
 
             if not datos_alumnos:
                 return {"status": "error", "message": "No hay datos para exportar."}
 
-            # 1. Cargar la plantilla de Excel preexistente
+            # 2. Parsear Grado (Nivel), Sección y Turno a partir del texto del menú
+            grado = ""
+            seccion = ""
+            turno = ""
+
+            if " - Sec. " in opcion_filtro:
+                partes = opcion_filtro.split(" - Sec. ")
+                seccion = partes[1].strip()
+                if "Mañana" in partes[0]:
+                    turno = "MAÑANA"
+                    grado = partes[0].replace("Mañana", "").strip()
+                elif "Tarde" in partes[0]:
+                    turno = "TARDE"
+                    grado = partes[0].replace("Tarde", "").strip()
+                else:
+                    grado = partes[0].strip()
+            else:
+                grado = str(parametros.get('grado') or opcion_filtro).strip()
+                seccion = str(parametros.get('seccion') or '').strip()
+                turno = str(parametros.get('turno') or '').strip()
+
+            if not seccion:
+                seccion = "General"
+            if not grado:
+                grado = "General"
+
+            # 3. Cargar la plantilla de Excel preexistente
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
             ruta_plantilla = os.path.join(base_dir, "Excels", "Asistencias_detalladas.xlsx")
             
@@ -35,13 +58,21 @@ class AsistenciasController:
 
             center_align = Alignment(horizontal="center", vertical="center")
             left_align = Alignment(horizontal="left", vertical="center")
+            
+            # Estilos para nueva columna de Porcentaje
+            negrita = Font(bold=True)
+            borde_fino = Border(
+                left=Side(style='thin', color='CCCCCC'),
+                right=Side(style='thin', color='CCCCCC'),
+                top=Side(style='thin', color='CCCCCC'),
+                bottom=Side(style='thin', color='CCCCCC')
+            )
 
-            # 2. Llenar datos de la cabecera (Fila 2)
-            texto_sala = f"{grado} {seccion} {turno}".strip()
+            # 4. Llenar datos de la cabecera (Fila 2) con SECCIÓN específica y explícita
             if type(ws['A2']).__name__ != 'MergedCell':
-                ws['A2'] = f"MES: {mes.upper()}       SALA: {texto_sala.upper()}"
+                ws['A2'] = f"MES: {mes.upper()}    NIVEL: {grado.upper()}    SECCIÓN: {seccion.upper()}    TURNO: {turno.upper()}"
 
-            # 3. Consultar toda la asistencia del mes
+            # 5. Consultar toda la asistencia del mes desde la base de datos SQLite
             ids_alumnos = [str(al['id']) for al in datos_alumnos]
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -56,7 +87,7 @@ class AsistenciasController:
             asistencias_db = cursor.fetchall()
             conn.close()
 
-            # Mapear matriz temporal de la base de datos
+            # Mapear matriz temporal de asistencias en memoria
             mapa_asis = {}
             for row in asistencias_db:
                 ced = str(row[0])
@@ -71,8 +102,7 @@ class AsistenciasController:
                     
                 mapa_asis[ced][semana][dia] = (estado == 'Presente')
 
-            # 4. Rellenar datos en la plantilla (A partir de la fila 4)
-            # AL SER LA COLUMNA 3 (C) EL SEXO, LAS SEMANAS DEBEN EMPEZAR EN LA 4 (D)
+            # 6. Rellenar datos en la plantilla (A partir de la fila 4)
             semanas_cols = {
                 "Semana 1": 4,  # Inicia en Columna D
                 "Semana 2": 9,  # Inicia en Columna I
@@ -80,6 +110,15 @@ class AsistenciasController:
                 "Semana 4": 19  # Inicia en Columna S
             }
             dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+            total_dias_mes = len(semanas_cols) * len(dias)  # 20 días hábiles en las 4 semanas
+
+            # Configurar cabecera para Porcentaje de Asistencia (Columna 25 / Y)
+            celda_cabecera_porc = ws.cell(row=3, column=25)
+            celda_cabecera_porc.value = "% ASIST."
+            celda_cabecera_porc.font = negrita
+            celda_cabecera_porc.alignment = center_align
+            celda_cabecera_porc.border = borde_fino
+            ws.column_dimensions['Y'].width = 12
 
             # Contadores de género
             total_varones = 0
@@ -112,7 +151,7 @@ class AsistenciasController:
                     celda_nombre.value = nombre
                     celda_nombre.alignment = left_align
 
-                # Sexo (Columna 3 / C) - AHORA ASIGNA "V" O "H"
+                # Sexo (Columna 3 / C)
                 celda_sexo = ws.cell(row=fila_actual, column=3)
                 if type(celda_sexo).__name__ != 'MergedCell':
                     celda_sexo.value = letra_sexo
@@ -133,15 +172,24 @@ class AsistenciasController:
                                 celda.value = "X"
                             celda.alignment = center_align
 
-                # Totalizador automático de la fila (Columna 24 / X)
+                # Totalizador automático de días asistidos (Columna 24 / X)
                 celda_total = ws.cell(row=fila_actual, column=24)
                 if type(celda_total).__name__ != 'MergedCell':
                     celda_total.value = total_presentes
                     celda_total.alignment = center_align
+
+                # Porcentaje de asistencia del alumno en el mes (Columna 25 / Y)
+                celda_porc = ws.cell(row=fila_actual, column=25)
+                if type(celda_porc).__name__ != 'MergedCell':
+                    porcentaje_calculado = (total_presentes / total_dias_mes) if total_dias_mes > 0 else 0
+                    celda_porc.value = porcentaje_calculado
+                    celda_porc.number_format = '0.0%'
+                    celda_porc.alignment = center_align
+                    celda_porc.border = borde_fino
                 
                 fila_actual += 1
 
-            # 5. Colocar totales de Varones y Hembras evadiendo celdas combinadas ("MergedCell")
+            # 7. Colocar totales de Varones y Hembras evadiendo celdas combinadas ("MergedCell")
             celda_varones_set = False
             celda_hembras_set = False
             
@@ -173,7 +221,6 @@ class AsistenciasController:
                             celda_dest.alignment = center_align
                             celda_hembras_set = True
 
-            # Si la plantilla no tiene las etiquetas, las agrega dinámicamente
             if not celda_varones_set:
                 ws.cell(row=fila_actual + 1, column=2, value="Total Varones:").alignment = left_align
                 ws.cell(row=fila_actual + 1, column=3, value=total_varones).alignment = center_align
@@ -181,11 +228,17 @@ class AsistenciasController:
                 ws.cell(row=fila_actual + 2, column=2, value="Total Hembras:").alignment = left_align
                 ws.cell(row=fila_actual + 2, column=3, value=total_hembras).alignment = center_align
 
-            # 6. Diálogo nativo para seleccionar ruta de guardado
             try:
                 window = webview.windows[0]
                 
-                nombre_sugerido = nombre_archivo.replace("/", "-").replace("\\", "-")
+                # Limpiamos los textos para que el explorador de archivos no tenga problemas (reemplazar espacios con guiones bajos)
+                grado_limpio = grado.replace(" ", "_")
+                seccion_limpia = seccion.replace(" ", "_")
+                
+                # Saneamos el nombre de cualquier carácter no válido para rutas como '/', o '\'
+                nombre_sugerido = f"Asistencias_Detalladas_{grado_limpio}_Sec_{seccion_limpia}_{mes}.xlsx"
+                nombre_sugerido = nombre_sugerido.replace("/", "-").replace("\\", "-")
+                
                 if not nombre_sugerido.endswith('.xlsx'):
                     nombre_sugerido += '.xlsx'
                 

@@ -10,6 +10,8 @@ from controllers.excels.reporte_ini_cntrl import ReporteIniController
 from controllers.excels.mobiliaria_cntrl import MobiliariaController
 from controllers.excels.asistencia_cntrl import AsistenciasController
 
+from controllers.excels.asistencia_tot_cntrl import Asis_Totales_Controller
+
 def inicializar_base_de_datos(db_path):
     db_dir = os.path.dirname(db_path)
     if not os.path.exists(db_dir):
@@ -65,6 +67,7 @@ def inicializar_base_de_datos(db_path):
         neurodiversidad TEXT,
         est_fecha_nacimiento TEXT,
         fecha_ingreso TEXT,
+        estado TEXT DEFAULT 'Vigente',
         re_inst_ci INTEGER,
         representante_ci INTEGER,
         salon_id INTEGER NOT NULL,
@@ -88,12 +91,14 @@ def inicializar_base_de_datos(db_path):
         FOREIGN KEY (cedula_estudiantil) REFERENCES Estudiante(cedula_estudiantil) ON DELETE CASCADE
     );
 
-        CREATE TABLE IF NOT EXISTS personal (
+ CREATE TABLE IF NOT EXISTS personal (
         cedula_trabajador INTEGER PRIMARY KEY,
         nombre TEXT NOT NULL,
         cargo TEXT NOT NULL,
         turno TEXT,
-        horas_administrativas INTEGER
+        horas_administrativas INTEGER,
+        estado TEXT DEFAULT 'Activo',
+        fecha_ingreso TEXT
     );
 
     CREATE TABLE IF NOT EXISTS asistencias_personal (
@@ -102,7 +107,7 @@ def inicializar_base_de_datos(db_path):
         mes TEXT NOT NULL,
         semana TEXT NOT NULL,
         dia_semana TEXT NOT NULL,
-        estado TEXT NOT NULL,
+        horas REAL DEFAULT 0,
         FOREIGN KEY (cedula_trabajador) REFERENCES personal(cedula_trabajador) ON DELETE CASCADE
     );
 
@@ -159,9 +164,10 @@ class SistemaAPI:
         self.controlador_reporte_ini = ReporteIniController()
         self.controlador_mobiliaria = MobiliariaController()
         self.controlador_reporte = ReporteController()
-        
-        # LÍNEA CORREGIDA: Se instancia AsistenciasController en lugar de Asis_Det_Controller
         self.controlador_asistencias_excel = AsistenciasController(self.db_path)
+        
+        # NUEVO: Se instancia el controlador de asistencias totales
+        self.controlador_asistencias_totales = Asis_Totales_Controller(self.db_path)
 
     # =========================================================
     # PUENTES ACADÉMICOS Y ESTUDIANTILES
@@ -219,6 +225,10 @@ class SistemaAPI:
     
     def generar_excel_asistencias(self, params):
         return self.controlador_asistencias_excel.generar_excel_asistencias(params)
+
+    # NUEVO PUENTE: Conexión para que React llame al Excel de Asistencias Totales
+    def generar_excel_asistencias_totales(self, parametros):
+        return self.controlador_asistencias_totales.generar_excel_asistencias_totales(parametros)
 
 def iniciar_aplicacion():
     api_global = SistemaAPI()

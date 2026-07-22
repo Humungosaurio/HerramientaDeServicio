@@ -19,23 +19,29 @@ const AsistenciasDetalladas = () => {
 
   const [nivelSeleccionado, setNivelSeleccionado] = useState("Maternal");
   const [turnoSeleccionado, setTurnoSeleccionado] = useState("Mañana");
+  const [seccionSeleccionada, setSeccionSeleccionada] = useState("A");
   const [semanaSeleccionada, setSemanaSeleccionada] = useState("Semana 1");
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualSistema);
 
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
 
-  const [opcionExportar, setOpcionExportar] = useState("Todos");
+  const [opcionExportar, setOpcionExportar] = useState("Vista Actual (En pantalla)");
   
   const opcionesExportar = [
-    "Todos",
-    "Maternal Mañana",
-    "Maternal Tarde",
-    "1er Nivel Mañana",
-    "1er Nivel Tarde",
-    "2do Nivel Mañana",
-    "2do Nivel Tarde",
-    "3er Nivel Mañana",
-    "3er Nivel Tarde"
+    "Vista Actual (En pantalla)",
+    "Maternal Mañana - Sec. A",
+    "Maternal Tarde - Sec. B",
+    "1er Nivel Mañana - Sec. A",
+    "1er Nivel Mañana - Sec. B",
+    "1er Nivel Tarde - Sec. C",
+    "1er Nivel Tarde - Sec. D",
+    "2do Nivel Mañana - Sec. A",
+    "2do Nivel Mañana - Sec. B",
+    "2do Nivel Tarde - Sec. C",
+    "2do Nivel Tarde - Sec. D",
+    "3er Nivel Mañana - Sec. A",
+    "3er Nivel Tarde - Sec. B",
+    "3er Nivel Tarde - Sec. C"
   ];
 
   const [alumnos, setAlumnos] = useState([]);
@@ -45,16 +51,75 @@ const AsistenciasDetalladas = () => {
   const semanas = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
+  const reglasPlantel = [
+    {
+      nivel: 'Maternal',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A'] },
+        { turno: 'Tarde', secciones: ['B'] }
+      ]
+    },
+    {
+      nivel: '1er Nivel',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A', 'B'] },
+        { turno: 'Tarde', secciones: ['C', 'D'] }
+      ]
+    },
+    {
+      nivel: '2do Nivel',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A', 'B'] },
+        { turno: 'Tarde', secciones: ['C', 'D'] }
+      ]
+    },
+    {
+      nivel: '3er Nivel',
+      distribucion: [
+        { turno: 'Mañana', secciones: ['A'] },
+        { turno: 'Tarde', secciones: ['B', 'C'] }
+      ]
+    }
+  ];
+
+  const obtenerSeccionesDisponibles = (nivel, turno) => {
+    const reglaNivel = reglasPlantel.find(r => r.nivel === nivel);
+    if (!reglaNivel) return ["A"];
+    const reglaTurno = reglaNivel.distribucion.find(d => d.turno === turno);
+    return reglaTurno ? reglaTurno.secciones : ["A"];
+  };
+
+  const seccionesDisponibles = obtenerSeccionesDisponibles(nivelSeleccionado, turnoSeleccionado);
+
+  const handleNivelChange = (nuevoNivel) => {
+    setNivelSeleccionado(nuevoNivel);
+    const disponibles = obtenerSeccionesDisponibles(nuevoNivel, turnoSeleccionado);
+    if (!disponibles.includes(seccionSeleccionada)) {
+      setSeccionSeleccionada(disponibles[0]);
+    }
+  };
+
+  const handleTurnoChange = (nuevoTurno) => {
+    setTurnoSeleccionado(nuevoTurno);
+    const disponibles = obtenerSeccionesDisponibles(nivelSeleccionado, nuevoTurno);
+    if (!disponibles.includes(seccionSeleccionada)) {
+      setSeccionSeleccionada(disponibles[0]);
+    }
+  };
+
   useEffect(() => {
     cargarMatriz();
     setBusquedaAlumno("");
-  }, [nivelSeleccionado, turnoSeleccionado, semanaSeleccionada, mesSeleccionado]);
+  }, [nivelSeleccionado, turnoSeleccionado, seccionSeleccionada, semanaSeleccionada, mesSeleccionado]);
 
   const cargarMatriz = async () => {
     if (window.pywebview && window.pywebview.api) {
       const res = await window.pywebview.api.cargar_matriz_asistencia({
-        grado: nivelSeleccionado, turno: turnoSeleccionado,
-        semana: semanaSeleccionada, mes: mesSeleccionado, seccion: "A" 
+        grado: nivelSeleccionado, 
+        turno: turnoSeleccionado,
+        semana: semanaSeleccionada, 
+        mes: mesSeleccionado, 
+        seccion: seccionSeleccionada 
       });
       if (res.status === 'success') {
         const adaptados = res.data.map(al => ({
@@ -91,11 +156,51 @@ const AsistenciasDetalladas = () => {
   };
 
   const handleDescargarExcel = async () => {
+    let datosParaExportar = alumnos; 
+    let filtroFinal = opcionExportar;
+
+    // Aseguramos que "Vista Actual" use la misma estructura de texto para que el backend reconozca el Grado (Nivel) y Sección
+    if (opcionExportar === "Vista Actual (En pantalla)") {
+      filtroFinal = `${nivelSeleccionado} ${turnoSeleccionado} - Sec. ${seccionSeleccionada}`;
+    } 
+    else if (opcionExportar !== "Todos los niveles y secciones") {
+      const partes = opcionExportar.split(" - Sec. ");
+      const seccionDestino = partes[1]?.trim() || "A";
+      
+      let gradoDestino = "";
+      let turnoDestino = "";
+      
+      if (partes[0].includes("Mañana")) {
+        turnoDestino = "Mañana";
+        gradoDestino = partes[0].replace(" Mañana", "").trim();
+      } else {
+        turnoDestino = "Tarde";
+        gradoDestino = partes[0].replace(" Tarde", "").trim();
+      }
+
+      if (window.pywebview && window.pywebview.api) {
+        const res = await window.pywebview.api.cargar_matriz_asistencia({
+          grado: gradoDestino,
+          turno: turnoDestino,
+          semana: semanaSeleccionada,
+          mes: mesSeleccionado,
+          seccion: seccionDestino
+        });
+        
+        if (res.status === 'success') {
+          datosParaExportar = res.data.map(al => ({
+            ...al,
+            estado: al.estado || 'Vigente'
+          }));
+        }
+      }
+    }
+
     await excelAsis(
-      alumnos,             
-      opcionExportar,      
+      datosParaExportar,             
+      filtroFinal,      
       mesSeleccionado,     
-      semanaSeleccionada   
+      semanaSeleccionada
     );
   };
 
@@ -108,7 +213,7 @@ const AsistenciasDetalladas = () => {
       <div className="flex flex-col md:flex-row gap-6">
         <aside className="md:w-1/4 flex md:flex-col overflow-x-auto gap-2">
           {niveles.map(nivel => (
-            <button key={nivel} onClick={() => setNivelSeleccionado(nivel)} className={`px-4 py-3 rounded-lg text-left font-bold transition-all ${nivelSeleccionado === nivel ? "bg-purple-700 text-white shadow-lg" : "text-gray-600 bg-white"}`}>
+            <button key={nivel} onClick={() => handleNivelChange(nivel)} className={`px-4 py-3 rounded-lg text-left font-bold transition-all ${nivelSeleccionado === nivel ? "bg-purple-700 text-white shadow-lg" : "text-gray-600 bg-white"}`}>
               {nivel}
             </button>
           ))}
@@ -132,7 +237,7 @@ const AsistenciasDetalladas = () => {
                 <select 
                   value={opcionExportar}
                   onChange={(e) => setOpcionExportar(e.target.value)}
-                  className="px-2 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-green-600 bg-white min-w-[150px] font-medium"
+                  className="px-2 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-green-600 bg-white min-w-[200px] font-medium"
                 >
                   {opcionesExportar.map(op => (
                     <option key={op} value={op}>{op}</option>
@@ -158,15 +263,24 @@ const AsistenciasDetalladas = () => {
           </header>
 
           <div className="flex gap-4 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 justify-between items-center">
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                {turnos.map(t => <button key={t} onClick={() => setTurnoSeleccionado(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
+                {turnos.map(t => <button key={t} onClick={() => handleTurnoChange(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
               </div>
+              
               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white" : "text-gray-600"}`}>{s}</button>)}
+                {seccionesDisponibles.map(sec => (
+                  <button key={sec} onClick={() => setSeccionSeleccionada(sec)} className={`px-4 py-1.5 rounded-lg ${seccionSeleccionada === sec ? "bg-purple-700 text-white shadow-sm" : "text-gray-600"}`}>
+                    Sec. {sec}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+                {semanas.map(s => <button key={s} onClick={() => setSemanaSeleccionada(s)} className={`px-4 py-1.5 rounded-lg ${semanaSeleccionada === s ? "bg-purple-700 text-white shadow-sm" : "text-gray-600"}`}>{s}</button>)}
               </div>
             </div>
-            <div className="text-xs font-bold text-gray-500 uppercase bg-gray-200 px-3 py-2 rounded-lg">
+            <div className="text-xs font-bold text-gray-500 uppercase bg-gray-200 px-3 py-2 rounded-lg hidden lg:block">
               Guardando en: <span className="text-purple-700 font-black">{mesSeleccionado}</span>
             </div>
           </div>
@@ -222,4 +336,5 @@ const AsistenciasDetalladas = () => {
     </div>
   );
 };
+
 export default AsistenciasDetalladas;
