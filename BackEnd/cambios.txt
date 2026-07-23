@@ -1,9 +1,0 @@
-//EXCLUSIVO DE PEDRO//
-Boton de guardas mobilaria
-Que no se guarden los registros ya guardados otra vez
-////////////////////////////////////////
-
-año escolar en registros para que no cuene feriados
-arreglar asistencias generales
-separar nombre y apellido del formulario // LISTO
-conectar boton de borrado en registro

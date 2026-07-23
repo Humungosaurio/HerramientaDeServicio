@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logoReceptoria from '../assets/LogoReceptoria.png';
 
 const Footer = () => {
   const [showOptions, setShowOptions] = useState(false);
@@ -25,7 +26,7 @@ const Footer = () => {
           {/* Logo e Identidad */}
           <div className="flex items-center gap-2">
             <img 
-              src="/src/assets/LogoReceptoria.png" 
+              src={logoReceptoria} 
               alt="Logo" 
               className="w-9 h-9 object-contain"
             />

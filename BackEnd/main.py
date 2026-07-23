@@ -1,6 +1,10 @@
 import os
+import sys
 import sqlite3
 import webview
+from pathlib import Path
+
+
 from controllers.register_cntrl import AcademicController
 from controllers.asis_det_cntrl import Asis_Det_Controller
 from controllers.personal_cntrl import PersonalController
@@ -12,11 +16,22 @@ from controllers.excels.asistencia_cntrl import AsistenciasController
 
 from controllers.excels.asistencia_tot_cntrl import Asis_Totales_Controller
 
+def resolver_ruta(ruta_relativa):
+    """Devuelve la ruta absoluta al recurso, funciona para dev y PyInstaller"""
+    try:
+        # PyInstaller crea una carpeta temporal y almacena la ruta en _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # Si no estamos en el ejecutable, usa la ruta actual
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, ruta_relativa)
+
 def inicializar_base_de_datos(db_path):
     db_dir = os.path.dirname(db_path)
     if not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
-        print(f"📁 Directorio creado: {db_dir}")
+        print(f" Directorio creado: {db_dir}")
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -131,7 +146,7 @@ def inicializar_base_de_datos(db_path):
         cursor.executescript(esquema_sql)
         cursor.execute("SELECT COUNT(*) FROM salones")
         if cursor.fetchone()[0] == 0:
-            print("🏫 Tabla 'salones' vacía. Precargando la configuración institucional...")
+            print(" Tabla 'salones' vacía. Precargando la configuración institucional...")
             salones_iniciales = [
                 ('Maternal', 'Mañana', 'A'), ('Maternal', 'Tarde', 'B'),
                 ('1er Nivel', 'Mañana', 'A'), ('1er Nivel', 'Mañana', 'B'),
@@ -144,14 +159,14 @@ def inicializar_base_de_datos(db_path):
                 "INSERT INTO salones (grado, turno, seccion) VALUES (?, ?, ?)", 
                 salones_iniciales
             )
-            print(f"✅ Se han registrado {len(salones_iniciales)} aulas correctamente.")
+            print(f" Se han registrado {len(salones_iniciales)} aulas correctamente.")
 
         conn.commit()
-        print("✅ Estructura de base de datos verificada y sincronizada con los controladores.")
+        print(" Estructura de base de datos verificada y sincronizada con los controladores.")
         
     except Exception as e:
         conn.rollback()
-        print(f"❌ Error al inicializar las tablas en main.py: {e}")
+        print(f" Error al inicializar las tablas en main.py: {e}")
     finally:
         # Aquí se cierra la conexión de forma segura una sola vez al terminar todo
         conn.close()
@@ -159,8 +174,10 @@ def inicializar_base_de_datos(db_path):
 
 class SistemaAPI:
     def __init__(self):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.db_path = os.path.join(base_dir, "database", "data", "Control_Estudiantil.db")
+        # Creamos una carpeta oculta '.simoncito' en el directorio del usuario de Windows
+        carpeta_db = Path.home() / ".simoncito" / "database" / "data"
+        carpeta_db.mkdir(parents=True, exist_ok=True) # Crea las carpetas si no existen
+        self.db_path = str(carpeta_db / "Control_Estudiantil.db")
         
         inicializar_base_de_datos(self.db_path)
         
@@ -239,13 +256,17 @@ class SistemaAPI:
 
 def iniciar_aplicacion():
     api_global = SistemaAPI()
+    
+    # Usamos la función resolver_ruta para encontrar la carpeta dist que pegaste
+    ruta_html = resolver_ruta("dist/index.html")
+    
     window = webview.create_window(
         title="Registro Administrativo - Simoncito",
-        url="http://localhost:5173",
+        url=ruta_html, # <--- AHORA APUNTA A TU BUILD DE REACT
         js_api=api_global,
         width=1200, height=700, resizable=True, min_size=(1024, 600)
     )
-    webview.start(debug=True)
+    webview.start(debug=False) # Recomendable cambiar debug a False para producción
 
 if __name__ == "__main__":
     iniciar_aplicacion()

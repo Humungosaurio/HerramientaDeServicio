@@ -6,18 +6,18 @@ import AsistenciasPersonal from "./pages/asistenciaProfesores"; // Importación 
 import Footer from "./components/footer";
 import AsistenciasDetalladas from "./pages/asistenciasDetalladas";
 import BienesMobiliario from "./pages/mobiliario";
+import fondoFijo from './assets/FondoMinimalista.jpg';
 // Nota: Importa aquí tu componente de Mobiliario cuando lo crees, por ejemplo:
 // import Mobiliario from "./pages/mobiliario";
 
 function App() {
-  const backgroundImage = "src/assets/FondoMinimalista.jpg";
 
   return (
     /* 1. Estructura flex y flex-col para asegurar el footer abajo */
     <div
       className="min-h-screen flex flex-col bg-fixed bg-cover bg-center"
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 35, 102, 0.75), rgba(0, 35, 102, 0.75)), url(${backgroundImage})`,
+        backgroundImage: `linear-gradient(rgba(0, 35, 102, 0.75), rgba(0, 35, 102, 0.75)), url(${fondoFijo})`,
       }}
     >
       <Navbar />
