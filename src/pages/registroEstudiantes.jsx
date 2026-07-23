@@ -34,7 +34,7 @@ const RegistroAlumnos = () => {
   const [busquedaAcademica, setBusquedaAcademica] = useState("");
   const [dropdownAbiertoId, setDropdownAbiertoId] = useState(null);
   const [busquedaEstudiante, setBusquedaEstudiante] = useState("");
-  const [filtroSeccionGrado, setFiltroSeccionGrado] = useState(""); // <--- NUEVO ESTADO PARA EL FILTRO
+  const [filtroSeccionGrado, setFiltroSeccionGrado] = useState("");
   const [busquedaModal, setBusquedaModal] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -51,7 +51,6 @@ const RegistroAlumnos = () => {
     return `01-${mes}-${anio}`;
   };
   const [nombreArchivo, setNombreArchivo] = useState(getPrimerDiaMes());
-  // ------------------------------------
 
   const opcionesCondicion = ['Ninguna', 'Autismo (TEA)', 'TDAH', 'Dislexia', 'Otra'];
   const opcionesGenero = ['Masculino', 'Femenino'];
@@ -138,7 +137,6 @@ const RegistroAlumnos = () => {
   });
 
   const estudiantesFiltrados = estudiantes.filter(est => {
-    // FILTRO POR GRADO Y SECCIÓN
     if (filtroSeccionGrado) {
       const idSeccionEst = `${est.turno}-${est.nivelEstudio}-${est.seccion}`.toLowerCase().replace(/ /g, '_');
       if (idSeccionEst !== filtroSeccionGrado) return false;
@@ -161,7 +159,6 @@ const RegistroAlumnos = () => {
     return coincideNombre || coincideApellido || coincideCedula;
   });
 
-  // --- LÓGICA DE EXPORTACIÓN Y FILTRO DE EXCEL ---
   const obtenerConteoSeccion = (idSeccion) => {
     return estudiantes.filter(est => {
       if (!est.nombre || !est.nombre.trim()) return false;
@@ -187,7 +184,6 @@ const RegistroAlumnos = () => {
       setShowModalExportar(false);
     }
   };
-  // ------------------------------------------------
 
   const ordenarEstudiantesAZ = () => {
     const estudiantesOrdenados = [...estudiantes].sort((a, b) => {
@@ -302,11 +298,79 @@ const RegistroAlumnos = () => {
     setEstudianteActivoId(id);
   };
 
-  const cerrarExpediente = () => {
+  // --- FUNCIÓN MODIFICADA: CIERRA EL EXPEDIENTE Y GUARDA AUTOMÁTICAMENTE EN BD ---
+  const cerrarExpediente = async () => {
     const estudianteActual = estudiantes.find(est => est.id === estudianteActivoId);
-    if (estudianteActual && !estudianteActual.esDeBD && estudianteActual.nombre.trim() === '' && estudianteActual.apellido.trim() === '') {
-      setEstudiantes(prev => prev.filter(est => est.id !== estudianteActivoId));
+
+    if (estudianteActual) {
+      const tieneNombre = (estudianteActual.nombre || '').trim() !== '';
+      const tieneApellido = (estudianteActual.apellido || '').trim() !== '';
+      const tieneCedula = (estudianteActual.cedulaEscolar || '').trim() !== '';
+
+      // Si es una fila temporal sin datos cargados, se elimina del estado local sin guardar
+      if (!estudianteActual.esDeBD && !tieneNombre && !tieneApellido && !tieneCedula) {
+        setEstudiantes(prev => prev.filter(est => est.id !== estudianteActivoId));
+        setEstudianteActivoId(null);
+        setDropdownAbiertoId(null);
+        return;
+      }
+
+      // Si el estudiante tiene información cargada, procedemos con la autoguardado
+      if (tieneNombre || tieneApellido || tieneCedula) {
+        if (!tieneCedula) {
+          alert("⚠️ Para guardar automáticamente el estudiante debe tener asignada una Cédula Escolar.");
+          return; // Se detiene el cierre para permitir ingresar la cédula
+        }
+
+        if (!estudianteActual.repCi || estudianteActual.repCi.trim() === '') {
+          alert("⚠️ Para guardar automáticamente se requiere la Cédula de Identidad del Representante.");
+          return; // Se detiene el cierre para ingresar C.I del representante
+        }
+
+        try {
+          setCargando(true);
+          let payload = { ...estudianteActual };
+
+          if (String(payload.id).startsWith('temp_') || !payload.esDeBD) {
+            delete payload.id;
+          }
+          delete payload.esDeBD;
+
+          if (!payload.tieneRepInstitucional) {
+            payload.re_inst_ci = payload.repCi;
+            payload.representanteInstitucional = payload.repNombre || payload.representanteLegal;
+            payload.re_inst_direccion = payload.repDireccion || payload.direccion;
+            payload.re_inst_fechaNacimiento = payload.repFechaNacimiento;
+            payload.re_inst_gradoInstruccion = payload.repGradoInstruccion;
+            payload.re_inst_trabaja = payload.repTrabaja;
+            payload.re_inst_dondeTrabaja = payload.repDondeTrabaja;
+            payload.re_inst_parentesco = payload.repParentesco;
+            payload.re_inst_lugarNacimiento = payload.repLugarNacimiento;
+            payload.re_inst_telefono = payload.repTelefono;
+            payload.re_inst_correo = payload.repCorreo;
+          }
+
+          if (window.pywebview && window.pywebview.api) {
+            const respuesta = await window.pywebview.api.registrar_estudiante_completo(payload);
+            if (respuesta && (respuesta.status === 'success' || respuesta.status === 'ok')) {
+              await cargarEstudiantesDesdeBD();
+            } else {
+              const msjError = respuesta ? respuesta.message : 'Error desconocido en backend';
+              alert(`⚠️ Error al guardar en Base de Datos:\n${msjError}`);
+              setCargando(false);
+              return;
+            }
+          }
+        } catch (error) {
+          alert(`❌ Ocurrió un error al intentar guardar automáticamente:\n${error.message}`);
+          setCargando(false);
+          return;
+        } finally {
+          setCargando(false);
+        }
+      }
     }
+
     setEstudianteActivoId(null);
     setDropdownAbiertoId(null);
   };
@@ -388,17 +452,12 @@ const RegistroAlumnos = () => {
 
         {/* ENCABEZADO DE LA SECCIÓN */}
         <header className="flex flex-col gap-5 border-b border-white/20 pb-5">
-
-          {/* Fila Superior: Solo el Título */}
           <div>
             <p className="text-sm text-purple-400 font-bold uppercase tracking-widest drop-shadow-md">Módulo Académico</p>
             <h1 className="text-3xl font-black text-white drop-shadow-lg">Registro de Alumnos</h1>
           </div>
 
-          {/* Fila Inferior: Barra de herramientas (Todos los botones) */}
           <div className="flex flex-wrap items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-white/10 backdrop-blur-sm shadow-inner">
-
-            {/* Grupo de Edición */}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setModoEdicion(!modoEdicion)}
@@ -420,10 +479,8 @@ const RegistroAlumnos = () => {
               </button>
             </div>
 
-            {/* Separador visual (solo visible en pantallas grandes) */}
             <div className="hidden md:block w-px h-8 bg-white/20 mx-2"></div>
 
-            {/* Grupo de Vista/Orden */}
             <div className="flex flex-wrap items-center gap-2">
               <button onClick={ordenarEstudiantesAZ} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95">
                 🔤 Ordenar A-Z
@@ -433,7 +490,6 @@ const RegistroAlumnos = () => {
                 📊 Ver Listado General
               </button>
 
-              {/* FILTRO POR SECCIÓN Y GRADO */}
               <select
                 value={filtroSeccionGrado}
                 onChange={(e) => setFiltroSeccionGrado(e.target.value)}
@@ -448,16 +504,13 @@ const RegistroAlumnos = () => {
               </select>
             </div>
 
-            {/* Grupo de la Derecha (Excel + Volver) empujado al final con md:ml-auto */}
             <div className="flex flex-wrap items-center gap-3 md:ml-auto">
-              {/* BOTÓN EXCEL INTEGRADO EN LA BARRA */}
               <button
                 onClick={() => {
                   const hoy = new Date();
                   const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                   const anio = hoy.getFullYear();
 
-                  // Nombre por defecto al abrir, ej: Exportacion_07-2026
                   setNombreArchivo(`Exportacion_${mes}-${anio}`);
                   setSeccionExportar("");
                   setShowModalExportar(true);
@@ -471,7 +524,6 @@ const RegistroAlumnos = () => {
                 🏠 Volver al Inicio
               </Link>
             </div>
-
           </div>
         </header>
 
@@ -593,7 +645,7 @@ const RegistroAlumnos = () => {
                 </h2>
                 <p className="text-xs text-blue-200">Complete la información detallada para el registro oficial.</p>
               </div>
-              <button onClick={cerrarExpediente} className="text-white hover:text-gray-300 text-3xl leading-none">&times;</button>
+              <button onClick={cerrarExpediente} disabled={cargando} className="text-white hover:text-gray-300 text-3xl leading-none">&times;</button>
             </div>
 
             <div className="p-6 overflow-y-auto bg-white">
@@ -616,7 +668,7 @@ const RegistroAlumnos = () => {
                     <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.apellido || ''} onChange={(e) => handleInputChange(estudianteActivo.id, 'apellido', e.target.value)} placeholder="Ej. Pérez Lopez" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Cédula Escolar</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Cédula Escolar <span className="text-red-500">*</span></label>
                     <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.cedulaEscolar || ''} onChange={(e) => handleInputChange(estudianteActivo.id, 'cedulaEscolar', e.target.value)} />
                   </div>
                   <div>
@@ -814,7 +866,7 @@ const RegistroAlumnos = () => {
                     <input type="text" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repNombre || ''} onChange={(e) => handleInputChange(estudianteActivo.id, 'repNombre', e.target.value)} placeholder="Ej. Carlos Pérez" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Cédula de Identidad</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Cédula de Identidad <span className="text-red-500">*</span></label>
                     <input type="text" inputMode="numeric" className="w-full p-2 border border-gray-300 rounded focus:border-purple-500 outline-none text-sm bg-white text-gray-800" value={estudianteActivo.repCi || ''} onChange={(e) => handleInputChange(estudianteActivo.id, 'repCi', e.target.value)} placeholder="Ej. 10222333" />
                   </div>
 
@@ -897,8 +949,12 @@ const RegistroAlumnos = () => {
               </div>
             </div>
             <div className="p-4 border-t border-gray-200 bg-white flex justify-end rounded-b-2xl">
-              <button onClick={cerrarExpediente} className="bg-[#002366] hover:bg-blue-900 text-white px-8 py-2 rounded-lg font-bold transition-colors shadow-md">
-                Cerrar Expediente
+              <button
+                onClick={cerrarExpediente}
+                disabled={cargando}
+                className="bg-[#002366] hover:bg-blue-900 text-white px-8 py-2 rounded-lg font-bold transition-colors shadow-md flex items-center gap-2"
+              >
+                {cargando ? '⌛ Guardando y Cerrando...' : '💾 Guardar y Cerrar Expediente'}
               </button>
             </div>
           </div>
@@ -993,7 +1049,7 @@ const RegistroAlumnos = () => {
         </div>
       )}
 
-      {/* MODAL PARA EXPORTAR A EXCEL INTEGRADO Y CORREGIDO */}
+      {/* MODAL PARA EXPORTAR A EXCEL */}
       {showModalExportar && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-gray-200">
@@ -1032,7 +1088,6 @@ const RegistroAlumnos = () => {
                     onClick={() => {
                       setTipoMatricula("inicial");
 
-                      // Actualizar nombre de archivo si ya hay una sección elegida
                       if (seccionExportar) {
                         const opcion = opcionesAcademicas.find(opt => opt.id === seccionExportar);
                         if (opcion) {
@@ -1058,7 +1113,6 @@ const RegistroAlumnos = () => {
                     onClick={() => {
                       setTipoMatricula("final");
 
-                      // Actualizar nombre de archivo si ya hay una sección elegida
                       if (seccionExportar) {
                         const opcion = opcionesAcademicas.find(opt => opt.id === seccionExportar);
                         if (opcion) {
