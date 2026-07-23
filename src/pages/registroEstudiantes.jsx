@@ -7,22 +7,22 @@ const calcularEdad = (fechaStr) => {
   if (!fechaStr) return '';
   const partes = fechaStr.split('-');
   if (partes.length !== 3) return '';
-  
+
   const ano = parseInt(partes[0], 10);
   const mes = parseInt(partes[1], 10);
   const dia = parseInt(partes[2], 10);
-  
+
   if (isNaN(ano) || isNaN(mes) || isNaN(dia)) return '';
-  
+
   const hoy = new Date();
   let edad = hoy.getFullYear() - ano;
   const mesActual = hoy.getMonth() + 1;
   const diaActual = hoy.getDate();
-  
+
   if (mesActual < mes || (mesActual === mes && diaActual < dia)) {
     edad--;
   }
-  
+
   return edad < 0 ? '0' : String(edad);
 };
 
@@ -34,6 +34,7 @@ const RegistroAlumnos = () => {
   const [busquedaAcademica, setBusquedaAcademica] = useState("");
   const [dropdownAbiertoId, setDropdownAbiertoId] = useState(null);
   const [busquedaEstudiante, setBusquedaEstudiante] = useState("");
+  const [filtroSeccionGrado, setFiltroSeccionGrado] = useState(""); // <--- NUEVO ESTADO PARA EL FILTRO
   const [busquedaModal, setBusquedaModal] = useState("");
   const [modoEdicion, setModoEdicion] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -41,8 +42,8 @@ const RegistroAlumnos = () => {
   // --- ESTADOS DE EXCEL INTEGRADOS ---
   const [showModalExportar, setShowModalExportar] = useState(false);
   const [seccionExportar, setSeccionExportar] = useState("");
-  const [tipoMatricula, setTipoMatricula] = useState("final"); 
-  
+  const [tipoMatricula, setTipoMatricula] = useState("final");
+
   const getPrimerDiaMes = () => {
     const hoy = new Date();
     const mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -137,6 +138,12 @@ const RegistroAlumnos = () => {
   });
 
   const estudiantesFiltrados = estudiantes.filter(est => {
+    // FILTRO POR GRADO Y SECCIÓN
+    if (filtroSeccionGrado) {
+      const idSeccionEst = `${est.turno}-${est.nivelEstudio}-${est.seccion}`.toLowerCase().replace(/ /g, '_');
+      if (idSeccionEst !== filtroSeccionGrado) return false;
+    }
+
     if (!busquedaEstudiante.trim()) return true;
     const termino = busquedaEstudiante.toLowerCase().trim();
     const coincideNombre = (est.nombre || '').toLowerCase().includes(termino);
@@ -165,7 +172,7 @@ const RegistroAlumnos = () => {
 
   const estudiantesAExportar = estudiantes.filter(est => {
     if (!est.nombre || est.nombre.trim() === '') return false;
-    if (!seccionExportar) return false; 
+    if (!seccionExportar) return false;
     const idSeccionEstudiante = `${est.turno}-${est.nivelEstudio}-${est.seccion}`.toLowerCase().replace(/ /g, '_');
     return idSeccionEstudiante === seccionExportar;
   });
@@ -209,7 +216,7 @@ const RegistroAlumnos = () => {
       direccion: '',
       cedulaEscolar: '',
       fechaNacimiento: '',
-      condicion: 'Ninguna',
+      condicion: '',
       estado: 'Vigente',
       tipoSangre: '',
       tallaMono: '',
@@ -256,7 +263,7 @@ const RegistroAlumnos = () => {
 
           const camposNumericos = ['edad', 'cedulaEscolar', 'repCi', 're_inst_ci', 'repTelefono', 're_inst_telefono', 'tallaCalzado'];
           if (camposNumericos.includes(campo)) {
-            nuevoValor = String(nuevoValor).replace(/\D/g, ''); 
+            nuevoValor = String(nuevoValor).replace(/\D/g, '');
           }
 
           if (campo === 'combinacionAcademica') {
@@ -305,7 +312,7 @@ const RegistroAlumnos = () => {
   };
 
   const guardarDatos = async () => {
-    const estudiantesValidos = estudiantes.filter(est => 
+    const estudiantesValidos = estudiantes.filter(est =>
       (est.nombre.trim() !== '' || est.apellido.trim() !== '') && est.cedulaEscolar.trim() !== ''
     );
 
@@ -323,12 +330,12 @@ const RegistroAlumnos = () => {
 
         for (let estudiante of estudiantesValidos) {
           let payload = { ...estudiante };
-          
+
           if (String(payload.id).startsWith('temp_') || !payload.esDeBD) {
             delete payload.id;
           }
-          delete payload.esDeBD; 
-          
+          delete payload.esDeBD;
+
           if (!payload.tieneRepInstitucional) {
             payload.re_inst_ci = payload.repCi;
             payload.representanteInstitucional = payload.repNombre || payload.representanteLegal;
@@ -344,7 +351,7 @@ const RegistroAlumnos = () => {
           }
 
           const respuesta = await window.pywebview.api.registrar_estudiante_completo(payload);
-          
+
           if (respuesta && (respuesta.status === 'success' || respuesta.status === 'ok')) {
             exitoCount++;
           } else {
@@ -381,7 +388,7 @@ const RegistroAlumnos = () => {
 
         {/* ENCABEZADO DE LA SECCIÓN */}
         <header className="flex flex-col gap-5 border-b border-white/20 pb-5">
-          
+
           {/* Fila Superior: Solo el Título */}
           <div>
             <p className="text-sm text-purple-400 font-bold uppercase tracking-widest drop-shadow-md">Módulo Académico</p>
@@ -390,7 +397,7 @@ const RegistroAlumnos = () => {
 
           {/* Fila Inferior: Barra de herramientas (Todos los botones) */}
           <div className="flex flex-wrap items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-white/10 backdrop-blur-sm shadow-inner">
-            
+
             {/* Grupo de Edición */}
             <div className="flex flex-wrap gap-2">
               <button
@@ -403,8 +410,8 @@ const RegistroAlumnos = () => {
                 {modoEdicion ? '🔓 Modo Edición (Activo)' : '🔒 Gestionar Matrícula'}
               </button>
 
-              <button 
-                onClick={guardarDatos} 
+              <button
+                onClick={guardarDatos}
                 disabled={cargando || !modoEdicion}
                 className={`px-6 py-2 rounded-md font-bold shadow-md transition-all flex items-center gap-2 ${cargando || !modoEdicion ? 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50' : 'bg-purple-600 hover:bg-purple-500 text-white active:scale-95'}`}
                 title={!modoEdicion ? "Debe presionar 'Gestionar Matrícula' para poder editar y guardar" : "Guardar cambios en la Base de Datos"}
@@ -417,7 +424,7 @@ const RegistroAlumnos = () => {
             <div className="hidden md:block w-px h-8 bg-white/20 mx-2"></div>
 
             {/* Grupo de Vista/Orden */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={ordenarEstudiantesAZ} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95">
                 🔤 Ordenar A-Z
               </button>
@@ -425,6 +432,20 @@ const RegistroAlumnos = () => {
               <button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md font-bold shadow-md transition-all flex items-center active:scale-95">
                 📊 Ver Listado General
               </button>
+
+              {/* FILTRO POR SECCIÓN Y GRADO */}
+              <select
+                value={filtroSeccionGrado}
+                onChange={(e) => setFiltroSeccionGrado(e.target.value)}
+                className="bg-slate-800 border border-slate-600 text-white font-bold text-sm px-3 py-2 rounded-md shadow-md focus:outline-none focus:border-purple-400 cursor-pointer transition-colors"
+              >
+                <option value="">🏫 Todos los Grados / Secciones</option>
+                {opcionesAcademicas.map((opt) => (
+                  <option key={`filtro-${opt.id}`} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Grupo de la Derecha (Excel + Volver) empujado al final con md:ml-auto */}
@@ -435,10 +456,10 @@ const RegistroAlumnos = () => {
                   const hoy = new Date();
                   const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                   const anio = hoy.getFullYear();
-                  
+
                   // Nombre por defecto al abrir, ej: Exportacion_07-2026
-                  setNombreArchivo(`Exportacion_${mes}-${anio}`); 
-                  setSeccionExportar(""); 
+                  setNombreArchivo(`Exportacion_${mes}-${anio}`);
+                  setSeccionExportar("");
                   setShowModalExportar(true);
                 }}
                 className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-md font-bold shadow-[0_0_10px_rgba(34,197,94,0.4)] transition-all flex items-center active:scale-95 border border-green-400"
@@ -457,8 +478,8 @@ const RegistroAlumnos = () => {
         {/* TABLA DE MATRÍCULA ACTUAL */}
         <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="p-4 bg-white border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h2 className="font-bold text-gray-700 whitespace-nowrap">Matrícula Actual ({estudiantes.length})</h2>
-            
+            <h2 className="font-bold text-gray-700 whitespace-nowrap">Matrícula Actual ({estudiantesFiltrados.length})</h2>
+
             <div className="w-full sm:max-w-md">
               <input
                 type="text"
@@ -512,7 +533,7 @@ const RegistroAlumnos = () => {
                       <div className="px-2">
                         <input type="text" disabled={!modoEdicion} placeholder="Dirección" className={`w-full p-2 rounded border border-transparent text-sm text-gray-800 outline-none ${!modoEdicion ? 'bg-transparent cursor-not-allowed text-gray-600' : 'bg-transparent focus:border-purple-400'}`} value={est.direccion || ''} onChange={(e) => handleInputChange(est.id, 'direccion', e.target.value)} />
                       </div>
-                      
+
                       <div className="px-2">
                         <div className="w-full p-2 bg-gray-100/80 border border-transparent rounded font-semibold text-sm text-gray-700 truncate cursor-not-allowed select-none" title={`${textoAsignacionActual} — Para modificar la sección, abra el Expediente.`}>
                           {textoAsignacionActual || 'Sin asignar'}
@@ -551,7 +572,7 @@ const RegistroAlumnos = () => {
                 )}
                 {!cargando && estudiantes.length > 0 && estudiantesFiltrados.length === 0 && (
                   <div className="col-span-9 p-8 text-center text-gray-400 font-medium bg-white">
-                    No se encontraron coincidencias para "{busquedaEstudiante}".
+                    No se encontraron coincidencias.
                   </div>
                 )}
               </div>
@@ -640,17 +661,16 @@ const RegistroAlumnos = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Condición (Neurodiversidad)</label>
-                    <input
-                      type="text"
-                      list="lista-condiciones"
+                    <select
                       className="w-full p-2 border border-gray-300 rounded focus:border-blue-500 outline-none text-sm bg-white text-gray-700"
                       value={estudianteActivo.condicion || ''}
                       onChange={(e) => handleInputChange(estudianteActivo.id, 'condicion', e.target.value)}
-                      placeholder="Seleccione o escriba..."
-                    />
-                    <datalist id="lista-condiciones">
-                      {opcionesCondicion.map(cond => <option key={cond} value={cond} />)}
-                    </datalist>
+                    >
+                      <option value="">Seleccione...</option>
+                      {opcionesCondicion.map(cond => (
+                        <option key={cond} value={cond}>{cond}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="md:col-span-2 relative">
@@ -923,7 +943,7 @@ const RegistroAlumnos = () => {
                     onClick={() => verExpedienteDesdeListado(est.id)}
                     className="p-4 bg-white hover:bg-purple-50/20 border border-gray-200 hover:border-purple-400 rounded-xl shadow-sm flex flex-col gap-1 relative overflow-hidden cursor-pointer transition-all hover:scale-[1.01] active:scale-95 group"
                   >
-                    {est.condicion !== 'Ninguna' && (
+                    {est.condicion && est.condicion !== 'Ninguna' && (
                       <div className="absolute top-0 right-0 w-2 h-full bg-amber-400" title={`Condición: ${est.condicion}`}></div>
                     )}
 
@@ -1011,7 +1031,7 @@ const RegistroAlumnos = () => {
                     type="button"
                     onClick={() => {
                       setTipoMatricula("inicial");
-                      
+
                       // Actualizar nombre de archivo si ya hay una sección elegida
                       if (seccionExportar) {
                         const opcion = opcionesAcademicas.find(opt => opt.id === seccionExportar);
@@ -1037,7 +1057,7 @@ const RegistroAlumnos = () => {
                     type="button"
                     onClick={() => {
                       setTipoMatricula("final");
-                      
+
                       // Actualizar nombre de archivo si ya hay una sección elegida
                       if (seccionExportar) {
                         const opcion = opcionesAcademicas.find(opt => opt.id === seccionExportar);
@@ -1069,18 +1089,18 @@ const RegistroAlumnos = () => {
                   onChange={(e) => {
                     const selectedId = e.target.value;
                     setSeccionExportar(selectedId);
-                    
+
                     const opcionElegida = opcionesAcademicas.find(opt => opt.id === selectedId);
                     if (opcionElegida) {
                       const hoy = new Date();
                       const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                       const anio = hoy.getFullYear();
-                      
+
                       const { turno, nivelEstudio, seccion } = opcionElegida.valores;
                       const nombreBase = `${turno}_${nivelEstudio}_Sec_${seccion}`.replace(/\s+/g, '_');
-                      
+
                       const etiquetaMatricula = tipoMatricula === "inicial" ? "Matricula_Inicial" : "Matricula_Final";
-                      
+
                       setNombreArchivo(`${nombreBase}_${etiquetaMatricula}_${mes}-${anio}`);
                     }
                   }}

@@ -90,7 +90,7 @@ const BienesMobiliario = () => {
   const confirmarEliminarBien = async () => {
     if (itemParaEliminar && window.pywebview && window.pywebview.api) {
       const res = await window.pywebview.api.eliminar_articulo(Number(itemParaEliminar.id));
-      
+
       if (res.status === "success") {
         setInventario((prev) => prev.filter((item) => item.id !== itemParaEliminar.id));
       } else {
@@ -118,13 +118,13 @@ const BienesMobiliario = () => {
       }
     }
   };
-// ==========================================
+  // ==========================================
   // 📌 NUEVO: LÓGICA PARA EXPORTAR A EXCEL (Arreglada)
   // ==========================================
   const exportarAExcel = async () => {
     // Si quieres exportar todos los datos, usa 'inventario'. 
     // Si quieres exportar solo los que aparecen en pantalla al buscar, cambia 'inventario' por 'itemsProcesados'
-    const datosAExportar = inventario; 
+    const datosAExportar = inventario;
 
     if (datosAExportar.length === 0) {
       alert("⚠️ No hay artículos en el inventario para exportar.");
@@ -134,7 +134,7 @@ const BienesMobiliario = () => {
     // Calculamos una fecha para el nombre del archivo
     const fecha = new Date().toLocaleDateString("es-VE").replace(/\//g, "-");
     const nombreDefecto = `Inventario_Mobiliaria_${fecha}`;
-    
+
     // Llamamos a la función del helper (excelMobiliaria.jsx)
     await generarExcelMobiliaria(datosAExportar, nombreDefecto, nombreDefecto);
   };
@@ -162,16 +162,16 @@ const BienesMobiliario = () => {
 
   return (
     <div className="p-8 text-gray-800 max-w-7xl mx-auto min-h-screen">
-      
+
       {/* HEADER */}
       <header className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center border-b pb-5 gap-4">
         <div>
           <p className="text-xs text-purple-600 font-bold uppercase tracking-widest mb-1">Simoncito Receptoria</p>
-          <h1 className="text-3xl font-black tracking-tight text-gray-900">Inventario de Mobiliario</h1>
+          <h1 className="text-3xl font-black tracking-tight text-white">Inventario de Mobiliario</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          
+
           {/* 📌 NUEVO: Botón de Exportar a Excel */}
           <button
             onClick={exportarAExcel}
@@ -182,9 +182,8 @@ const BienesMobiliario = () => {
 
           <button
             onClick={() => setModoEdicion(!modoEdicion)}
-            className={`font-bold text-sm px-5 py-2.5 rounded-lg shadow-md transition-all ${
-              modoEdicion ? "bg-red-500 hover:bg-red-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
+            className={`font-bold text-sm px-5 py-2.5 rounded-lg shadow-md transition-all ${modoEdicion ? "bg-red-500 hover:bg-red-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
           >
             {modoEdicion ? "🔒 Bloquear Vista" : "✏️ Editar Existentes"}
           </button>
@@ -200,14 +199,14 @@ const BienesMobiliario = () => {
             🏠 Inicio
           </Link>
 
-          {modoEdicion && (
-            <button
-              onClick={guardarCambiosBD}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold text-sm px-6 py-2.5 rounded-lg shadow-md animate-bounce"
-            >
-              💾 Guardar Todo en BD
-            </button>
-          )}
+
+          <button
+            onClick={guardarCambiosBD}
+            className=" bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-2.5 rounded-lg shadow-md "
+          >
+            💾 Guardar Todo en BD
+          </button>
+
         </div>
       </header>
 
@@ -301,10 +300,10 @@ const BienesMobiliario = () => {
                     rows={1}
                   />
                 </td>
-                  <td className="p-4 text-center">
-                  <button 
+                <td className="p-4 text-center">
+                  <button
                     type="button"
-                    onClick={() => solicitarEliminarBien(item)} 
+                    onClick={() => solicitarEliminarBien(item)}
                     className="text-red-500 hover:text-red-700"
                   >
                     🗑️

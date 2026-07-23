@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { excelAsis } from '../components/Excel_comp/excelAsistencias'; 
+import { excelAsis } from '../components/Excel_comp/excelAsistencias';
 
 const Asistencias = () => {
   const mesesAnio = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
@@ -18,12 +18,12 @@ const Asistencias = () => {
   });
 
   const [nivel, setNivel] = useState('Maternal');
-  const [turno, setTurno] = useState('Mañana'); 
+  const [turno, setTurno] = useState('Mañana');
   const [semana, setSemana] = useState('Semana 1');
   const [mes, setMes] = useState(mesActualSistema);
-  
+
   const [resumen, setResumen] = useState([]);
-  const [alumnosData, setAlumnosData] = useState([]); 
+  const [alumnosData, setAlumnosData] = useState([]);
 
   // Estado para el selector del Excel modificado (Primer valor de la lista)
   const [opcionExportar, setOpcionExportar] = useState("Maternal Mañana - Sec. A");
@@ -53,18 +53,18 @@ const Asistencias = () => {
   useEffect(() => {
     const fetchResumen = async () => {
       if (window.pywebview && window.pywebview.api) {
-        const res = await window.pywebview.api.obtener_resumen_global({ 
-          grado: nivel, 
-          turno: turno, 
-          semana: semana, 
-          mes: mes 
+        const res = await window.pywebview.api.obtener_resumen_global({
+          grado: nivel,
+          turno: turno,
+          semana: semana,
+          mes: mes
         });
-        
+
         if (res.status === 'success') {
-           setResumen(res.data);
-           if (res.alumnos_lista) {
-             setAlumnosData(res.alumnos_lista); 
-           }
+          setResumen(res.data);
+          if (res.alumnos_lista) {
+            setAlumnosData(res.alumnos_lista);
+          }
         }
       }
     };
@@ -72,13 +72,13 @@ const Asistencias = () => {
   }, [nivel, turno, semana, mes]);
 
   // Función simplificada: Siempre consulta la base de datos por la opción seleccionada
-const manejarDescargaExcel = async () => {
+  const manejarDescargaExcel = async () => {
     const partes = opcionExportar.split(" - Sec. ");
     const seccionDestino = partes[1]?.trim() || "A";
-    
+
     let gradoDestino = "";
     let turnoDestino = "";
-    
+
     if (partes[0].includes("Mañana")) {
       turnoDestino = "Mañana";
       gradoDestino = partes[0].replace(" Mañana", "").trim();
@@ -104,7 +104,7 @@ const manejarDescargaExcel = async () => {
           alert(`❌ Ocurrió un error al generar el Excel: ${respuesta.message}`);
         }
       } catch (error) {
-         alert("❌ Error de comunicación con el sistema local: " + error.message);
+        alert("❌ Error de comunicación con el sistema local: " + error.message);
       }
     } else {
       alert("🖥️ Estás en el navegador. La generación de plantillas Excel solo funciona ejecutando la aplicación de escritorio.");
@@ -132,11 +132,11 @@ const manejarDescargaExcel = async () => {
                 📅 Fecha de operación: <span className="capitalize text-purple-300">{fechaHoyFormateada}</span>
               </p>
             </div>
-            
+
             <div className="flex flex-col gap-3 xl:items-end">
               <div className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm w-fit">
                 <label className="text-xs font-bold text-gray-600 uppercase pl-1">Exportar Excel:</label>
-                <select 
+                <select
                   value={opcionExportar}
                   onChange={(e) => setOpcionExportar(e.target.value)}
                   className="px-2 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-green-600 bg-white min-w-[200px] font-medium text-gray-800"
@@ -145,7 +145,7 @@ const manejarDescargaExcel = async () => {
                     <option key={op} value={op}>{op}</option>
                   ))}
                 </select>
-                <button 
+                <button
                   onClick={manejarDescargaExcel}
                   className="bg-green-600 text-white px-3 py-1.5 rounded-md text-sm font-bold shadow hover:bg-green-700 transition-colors flex items-center gap-2"
                   title="Descargar reporte en formato Excel"
@@ -166,26 +166,26 @@ const manejarDescargaExcel = async () => {
           </header>
 
           <div className="flex gap-4 mb-6 bg-white/5 p-4 rounded-xl border border-white/10 items-center flex-wrap">
-             <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                {turnos.map(t => (
-                  <button key={t} onClick={() => setTurno(t)} className={`px-4 py-1.5 rounded-lg transition-all ${turno === t ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
-                    {t}
-                  </button>
-                ))}
-             </div>
-             
-             <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
-                {semanas.map(s => (
-                  <button key={s} onClick={() => setSemana(s)} className={`px-4 py-1.5 rounded-lg transition-all ${semana === s ? 'bg-purple-700 text-white shadow-sm' : 'text-gray-600 hover:text-purple-700'}`}>
-                    {s}
-                  </button>
-                ))}
-             </div>
-             
-             <div className="flex bg-purple-900/40 border border-purple-500/30 px-4 py-1.5 rounded-xl font-bold text-sm text-purple-200 items-center gap-1 ml-auto">
-               <span>Mes activo:</span>
-               <span className="text-white font-black">{mes}</span>
-             </div>
+            <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+              {turnos.map(t => (
+                <button key={t} onClick={() => setTurno(t)} className={`px-4 py-1.5 rounded-lg transition-all ${turno === t ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
+              {semanas.map(s => (
+                <button key={s} onClick={() => setSemana(s)} className={`px-4 py-1.5 rounded-lg transition-all ${semana === s ? 'bg-purple-700 text-white shadow-sm' : 'text-gray-600 hover:text-purple-700'}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex bg-purple-900/40 border border-purple-500/30 px-4 py-1.5 rounded-xl font-bold text-sm text-purple-200 items-center gap-1 ml-auto">
+              <span>Mes activo:</span>
+              <span className="text-white font-black">{mes}</span>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-xl overflow-hidden">
@@ -208,7 +208,7 @@ const manejarDescargaExcel = async () => {
                     </td>
                     {diasSemana.map(dia => {
                       const datosDia = sec.dias?.[dia] || { v: 0, h: 0, total: 0 };
-                      
+
                       return (
                         <td key={dia} className="p-3 border-l border-gray-100 align-middle">
                           <div className="flex flex-col gap-1 items-center justify-center">

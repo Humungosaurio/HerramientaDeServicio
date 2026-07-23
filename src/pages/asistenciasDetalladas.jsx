@@ -26,7 +26,7 @@ const AsistenciasDetalladas = () => {
   const [busquedaAlumno, setBusquedaAlumno] = useState("");
 
   const [opcionExportar, setOpcionExportar] = useState("Vista Actual (En pantalla)");
-  
+
   const opcionesExportar = [
     "Vista Actual (En pantalla)",
     "Maternal Mañana - Sec. A",
@@ -115,11 +115,11 @@ const AsistenciasDetalladas = () => {
   const cargarMatriz = async () => {
     if (window.pywebview && window.pywebview.api) {
       const res = await window.pywebview.api.cargar_matriz_asistencia({
-        grado: nivelSeleccionado, 
+        grado: nivelSeleccionado,
         turno: turnoSeleccionado,
-        semana: semanaSeleccionada, 
-        mes: mesSeleccionado, 
-        seccion: seccionSeleccionada 
+        semana: semanaSeleccionada,
+        mes: mesSeleccionado,
+        seccion: seccionSeleccionada
       });
       if (res.status === 'success') {
         const adaptados = res.data.map(al => ({
@@ -156,20 +156,20 @@ const AsistenciasDetalladas = () => {
   };
 
   const handleDescargarExcel = async () => {
-    let datosParaExportar = alumnos; 
+    let datosParaExportar = alumnos;
     let filtroFinal = opcionExportar;
 
     // Aseguramos que "Vista Actual" use la misma estructura de texto para que el backend reconozca el Grado (Nivel) y Sección
     if (opcionExportar === "Vista Actual (En pantalla)") {
       filtroFinal = `${nivelSeleccionado} ${turnoSeleccionado} - Sec. ${seccionSeleccionada}`;
-    } 
+    }
     else if (opcionExportar !== "Todos los niveles y secciones") {
       const partes = opcionExportar.split(" - Sec. ");
       const seccionDestino = partes[1]?.trim() || "A";
-      
+
       let gradoDestino = "";
       let turnoDestino = "";
-      
+
       if (partes[0].includes("Mañana")) {
         turnoDestino = "Mañana";
         gradoDestino = partes[0].replace(" Mañana", "").trim();
@@ -186,7 +186,7 @@ const AsistenciasDetalladas = () => {
           mes: mesSeleccionado,
           seccion: seccionDestino
         });
-        
+
         if (res.status === 'success') {
           datosParaExportar = res.data.map(al => ({
             ...al,
@@ -197,9 +197,9 @@ const AsistenciasDetalladas = () => {
     }
 
     await excelAsis(
-      datosParaExportar,             
-      filtroFinal,      
-      mesSeleccionado,     
+      datosParaExportar,
+      filtroFinal,
+      mesSeleccionado,
       semanaSeleccionada
     );
   };
@@ -230,11 +230,11 @@ const AsistenciasDetalladas = () => {
                 📅 Fecha de registro: <span className="capitalize text-purple-300">{fechaHoyFormateada}</span>
               </p>
             </div>
-            
+
             <div className="flex flex-col gap-3 xl:items-end">
               <div className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm w-fit">
                 <label className="text-xs font-bold text-gray-600 uppercase pl-1">Exportar Excel:</label>
-                <select 
+                <select
                   value={opcionExportar}
                   onChange={(e) => setOpcionExportar(e.target.value)}
                   className="px-2 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-green-600 bg-white min-w-[200px] font-medium"
@@ -243,8 +243,8 @@ const AsistenciasDetalladas = () => {
                     <option key={op} value={op}>{op}</option>
                   ))}
                 </select>
-                <button 
-                  onClick={handleDescargarExcel} 
+                <button
+                  onClick={handleDescargarExcel}
                   className="bg-green-600 text-white px-3 py-1.5 rounded-md text-sm font-bold shadow hover:bg-green-700 transition-colors flex items-center gap-2"
                   title="Descargar reporte en formato Excel"
                 >
@@ -254,7 +254,7 @@ const AsistenciasDetalladas = () => {
                   Descargar
                 </button>
               </div>
-              
+
               <div className="flex gap-2 w-fit">
                 <Link to="/" className="bg-white px-4 py-2 rounded-md font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">🏠 Inicio</Link>
                 <button onClick={guardarCambiosBD} className="bg-purple-700 text-white px-5 py-2 rounded-md font-bold shadow-md hover:bg-purple-800 transition-colors">💾 Guardar Reporte</button>
@@ -267,7 +267,7 @@ const AsistenciasDetalladas = () => {
               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
                 {turnos.map(t => <button key={t} onClick={() => handleTurnoChange(t)} className={`px-5 py-1.5 rounded-lg ${turnoSeleccionado === t ? "bg-white text-purple-700" : "text-gray-600"}`}>{t}</button>)}
               </div>
-              
+
               <div className="flex bg-gray-200 p-1 rounded-xl font-bold">
                 {seccionesDisponibles.map(sec => (
                   <button key={sec} onClick={() => setSeccionSeleccionada(sec)} className={`px-4 py-1.5 rounded-lg ${seccionSeleccionada === sec ? "bg-purple-700 text-white shadow-sm" : "text-gray-600"}`}>
@@ -307,8 +307,8 @@ const AsistenciasDetalladas = () => {
                 {alumnosMostrados.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="p-8 text-center text-gray-400">
-                      {alumnos.filter(al => al.estado !== 'Retirado').length === 0 
-                        ? "No hay estudiantes vigentes cargados en esta sección." 
+                      {alumnos.filter(al => al.estado !== 'Retirado').length === 0
+                        ? "No hay estudiantes vigentes cargados en esta sección."
                         : "No se encontraron alumnos con ese nombre."}
                     </td>
                   </tr>
@@ -318,11 +318,11 @@ const AsistenciasDetalladas = () => {
                     <td className="p-4 text-center text-gray-400">{al.sexo?.toUpperCase() || ''}</td>
                     {diasSemana.map(dia => (
                       <td key={dia} className="p-4 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={al.asistencia[dia] || false} 
-                          onChange={() => handleAsistenciaChange(al.id, dia)} 
-                          className="w-6 h-6 accent-purple-700 cursor-pointer" 
+                        <input
+                          type="checkbox"
+                          checked={al.asistencia[dia] || false}
+                          onChange={() => handleAsistenciaChange(al.id, dia)}
+                          className="w-6 h-6 accent-purple-700 cursor-pointer"
                         />
                       </td>
                     ))}

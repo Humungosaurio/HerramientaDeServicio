@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom'; // ◄ Añadimos useNavigate
-import logoReceptoria from '../assets/LogoReceptoria.png'; 
+import logoReceptoria from '../assets/LogoReceptoria.png';
 
 const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -38,11 +38,10 @@ const Navbar = () => {
       <Link
         to={to}
         onClick={() => setIsSidebarOpen(false)}
-        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${
-          isActive 
-            ? 'bg-purple-100 text-purple-800 font-bold shadow-sm' 
-            : 'text-gray-600 hover:bg-gray-50 hover:text-purple-600 font-medium'
-        }`}
+        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${isActive
+          ? 'bg-purple-100 text-purple-800 font-bold shadow-sm'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-purple-600 font-medium'
+          }`}
       >
         <div className="flex items-center gap-3">
           <span className="text-xl w-6 text-center">{icon}</span>
@@ -59,16 +58,16 @@ const Navbar = () => {
     <>
       {/* BARRA DE NAVEGACIÓN SUPERIOR */}
       <nav className="bg-white/90 backdrop-blur-sm border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shadow-sm relative z-30">
-        
+
         {/* Lado Izquierdo: Logo Institucional */}
         <div className="flex items-center z-10">
           <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-            <img 
-              src={logoReceptoria} 
+            <img
+              src={logoReceptoria}
               alt="Logo C.E.I Simoncito"
               className="w-full h-full object-contain"
             />
-          </div> 
+          </div>
         </div>
 
         {/* Centro: Título del Plantel */}
@@ -80,7 +79,7 @@ const Navbar = () => {
 
         {/* Lado Derecho: Botón del Centro de Atajos (Hamburguesa) */}
         <div className="flex items-center gap-4 z-10">
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(true)}
             className="p-2 rounded-lg text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors focus:outline-none flex items-center gap-2 font-bold text-sm"
             aria-label="Abrir panel"
@@ -95,20 +94,18 @@ const Navbar = () => {
       </nav>
 
       {/* --- COMPONENTES DE LA BARRA LATERAL (SIDEBAR) --- */}
-      
+
       {/* Fondo difuminado externo (Overlay) */}
-      <div 
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-          isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+      <div
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
         onClick={() => setIsSidebarOpen(false)}
       />
 
       {/* Contenedor Deslizable */}
-      <div className={`fixed top-0 right-0 h-full w-[340px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-        isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        
+      <div className={`fixed top-0 right-0 h-full w-[340px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}>
+
         {/* Encabezado del Panel */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between mb-2">
@@ -119,7 +116,7 @@ const Navbar = () => {
                 <span className="text-[10px] text-purple-600 font-bold uppercase tracking-widest">Atajos del Sistema</span>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(false)}
               className="text-gray-400 hover:text-red-500 hover:bg-red-50 h-8 w-8 rounded-lg flex items-center justify-center transition-colors"
             >
@@ -132,31 +129,31 @@ const Navbar = () => {
 
         {/* Enlaces Mapeados */}
         <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-6 custom-scrollbar">
-          
+
           {/* Bloque 1: Gestión Estudiantil y Matrícula */}
           <div>
             <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2.5 px-2">Área Académica</h4>
             <nav className="flex flex-col gap-1">
-              
-              <NavItem 
-                to="/registro-estudiantes" 
-                icon="🧑‍🎓" 
-                label="Matrícula de Estudiantes" 
+
+              <NavItem
+                to="/registro-estudiantes"
+                icon="🧑 "
+                label="Matrícula de Estudiantes"
                 fileRef="registroEstudiantes"
               />
-              
+
               {/* ◄ CORRECCIÓN: Coincide exactamente con App.jsx */}
-              <NavItem 
-                to="/AsistenciasDetalladas" 
-                icon="📝" 
-                label="Listado detallado" 
+              <NavItem
+                to="/AsistenciasDetalladas"
+                icon="📝"
+                label="Listado detallado"
                 fileRef="asistenciasDetalladas"
               />
-              
-              <NavItem 
-                to="/asistencias" 
-                icon="📊" 
-                label="Asistencias totales" 
+
+              <NavItem
+                to="/asistencias"
+                icon="📊"
+                label="Asistencias totales"
                 fileRef="asistencias"
               />
 
@@ -167,19 +164,19 @@ const Navbar = () => {
           <div>
             <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2.5 px-2">Administración</h4>
             <nav className="flex flex-col gap-1">
-              
+
               {/* ◄ CORRECCIÓN: Ahora apunta a /control-personal como en App.jsx */}
-              <NavItem 
-                to="/control-personal" 
-                icon="👨‍🏫" 
-                label="Asistencia del Personal" 
+              <NavItem
+                to="/control-personal"
+                icon="👨‍🏫"
+                label="Asistencia del Personal"
                 fileRef="asistenciaProfesores"
               />
-              
-              <NavItem 
-                to="/mobiliario" 
-                icon="🪑" 
-                label="Bienes y Mobiliario" 
+
+              <NavItem
+                to="/mobiliario"
+                icon="🪑"
+                label="Bienes y Mobiliario"
                 fileRef="mobiliario"
               />
 
@@ -190,20 +187,9 @@ const Navbar = () => {
           <div className="mt-2 border-t border-gray-100 pt-4">
             <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 px-2">Mantenimiento</h4>
             <div className="flex flex-col gap-2">
-              <button 
-                onClick={handleRespaldoBD} 
-                className="flex items-center gap-3 bg-slate-800 hover:bg-slate-900 text-white p-3 rounded-xl transition-all active:scale-98 shadow-sm w-full text-left"
-              >
-                <span className="text-xl">💾</span>
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold leading-tight">Respaldar Base de Datos</span>
-                  <span className="text-[10px] text-slate-300">Copia de resguardo local (.db)</span>
-                </div>
-              </button>
-
               {/* ◄ CORRECCIÓN: Navegación segura que no crashea PyWebView */}
-              <button 
-                onClick={handleReinicioSeguro} 
+              <button
+                onClick={handleReinicioSeguro}
                 className="flex items-center gap-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl transition-colors w-full text-left text-xs font-bold"
               >
                 <span>🏠</span>
