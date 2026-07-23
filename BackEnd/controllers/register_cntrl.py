@@ -163,15 +163,10 @@ class AcademicController:
             conn.close()
 
     def obtener_estudiantes(self):
-        conn = sqlite3.connect(self.db_path)
-        conn = sqlite3.connect(self.db_path, timeout=20.0) # <-- AÑADE TIMEOUT AQUÍ
-        conn.execute("PRAGMA journal_mode=WAL;")           # <-- Y MODO WAL AQUÍ
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
+        conn = sqlite3.connect(self.db_path, timeout=20.0)
         conn.row_factory = sqlite3.Row 
         cursor = conn.cursor()
         try:
-            # AÑADIDO: e.estado en el SELECT
             query = """
                 SELECT 
                     e.cedula_estudiantil, e.est_nombre, e.est_apellido, e.fecha_ingreso, e.est_direccion, e.est_genero,
@@ -220,7 +215,7 @@ class AcademicController:
                     "nivelEstudio": row['grado'] or "",
                     "turno": row['turno'] or "",
                     "seccion": row['seccion'] or "",
-                    "estado": row['estado'] or "Vigente", # <--- AHORA LEE EL VALOR DE LA BD
+                    "estado": row['estado'] or "Vigente",
                     "edad": "",
                     
                     "repCi": rep_ci,

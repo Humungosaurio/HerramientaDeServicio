@@ -21,6 +21,12 @@ def inicializar_base_de_datos(db_path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     conn.execute("PRAGMA foreign_keys = ON;")
+    
+    # Habilitamos WAL sin cerrar la conexión aquí
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+    except Exception as e:
+        print(f"Advertencia al configurar WAL: {e}")
 
     esquema_sql = """
     CREATE TABLE IF NOT EXISTS salones (
@@ -147,6 +153,7 @@ def inicializar_base_de_datos(db_path):
         conn.rollback()
         print(f"❌ Error al inicializar las tablas en main.py: {e}")
     finally:
+        # Aquí se cierra la conexión de forma segura una sola vez al terminar todo
         conn.close()
 
 
