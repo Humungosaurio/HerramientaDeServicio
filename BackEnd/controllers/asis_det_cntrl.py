@@ -12,7 +12,7 @@ class Asis_Det_Controller:
         semana = str(parametros.get('semana') or 'Semana 1').strip()
 
         conn = sqlite3.connect(self.db_path, timeout=20.0)
-        conn.execute("PRAGMA journal_mode=WAL;")
+       # conn.execute("PRAGMA journal_mode=WAL;")
         cursor = conn.cursor()
         try:
             # CORRECCIÓN: Evitamos LOWER() en SQL para columnas con 'ñ' o acentos.
